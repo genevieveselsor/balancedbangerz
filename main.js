@@ -301,6 +301,32 @@ function renderDispGraph(data) {
     .attr('stroke','url(#global-disp-gradient)')
     .attr('stroke-width',1.5)
     .attr('d',line);
+  
+    // add hover targets for tooltip
+    g.selectAll('.disp-hover')
+    .data(dispData)
+    .enter().append('circle')
+      .attr('class', 'disp-hover')
+      .attr('cx', d => xScale(d.time_s))
+      .attr('cy', d => yScale(d.disp))
+      .attr('r', 8)                 // big enough to catch the mouse
+      .attr('fill', 'transparent')  // invisible hit area
+      .on('mouseover', (event, d) => {
+        tooltip
+          .style('display', 'block')
+          .html(`
+            <strong>time (seconds):</strong> ${d.time_s.toFixed(2)} s<br/>
+            <strong>disp:</strong> ${d.disp.toFixed(2)} mm
+          `);
+      })
+      .on('mousemove', event => {
+        tooltip
+          .style('left',  `${event.pageX + 10}px`)
+          .style('top',   `${event.pageY - 25}px`);
+      })
+      .on('mouseout', () => {
+        tooltip.style('display', 'none');
+      });
 
   // animate draw
   const L = path.node().getTotalLength();
