@@ -36,6 +36,17 @@ let groups = {
     "NM0011": NM0011Data,
 };
 
+// flatten all groups into one array
+const allData = [...NM0001Data, ...NM0004Data, ...NM0011Data];
+
+// global time range across every sample
+const globalTimeExtent = d3.extent(allData, d => d.time_s);
+
+// one single color scale for every chart
+const globalColorScale = d3.scaleSequential(d3.interpolateTurbo)
+                           .domain(globalTimeExtent);
+
+
 ///////////////////////////////////////////////////////
 
 // FUNCTION filter data by marker and genre
@@ -82,9 +93,9 @@ function renderGraph(data, axes, x, y) {
         .domain(d3.extent(data, d => d[`${y}_mm`]))
         .range([innerHeight, 0]);
     
-    const timeExtent = d3.extent(data, d => d.time_s);
-    const colorScale = d3.scaleSequential(d3.interpolateTurbo)
-                       .domain(timeExtent);
+    // const timeExtent = d3.extent(data, d => d.time_s);
+    // const colorScale = d3.scaleSequential(d3.interpolateTurbo)
+    //                    .domain(timeExtent);
 
     g.append("g")
         .attr("class", "x-axis")
@@ -112,7 +123,7 @@ function renderGraph(data, axes, x, y) {
         .attr("cx", d => xScale(d[`${x}_mm`]))
         .attr("cy", d => yScale(d[`${y}_mm`]))
         .attr("r", 4)
-        .style("fill", d => colorScale(d.time_s))
+        .style("fill", d => globalColorScale(d.time_s))
         .style("opacity", 0)
     .transition()
         .delay((d,i) => i)
@@ -221,61 +232,82 @@ const tooltip = d3.select("body").append("div")
 
 // FUNCTION render displacement graph
 function renderDispGraph(data) {
-  // clear old
-  d3.select('#disp-chart').selectAll('*').remove();
-  
   const width  = 900;
   const height = 300;
   const margin = { top: 40, right: 20, bottom: 30, left: 60 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
-  
+
+  // clear old
+  d3.select('#disp-chart').selectAll('*').remove();
+
+  // setup svg
   const svg = d3.select('#disp-chart')
     .attr('viewBox', `0 0 ${width} ${height}`)
-    .style('width', '100%')
-    .style('height', 'auto');
-  
+    .style('width', '100%').style('height', 'auto');
+
+  // build gradient with multiple stops
+  svg.select('defs').remove();
+  const defs = svg.append('defs');
+  const grad = defs.append('linearGradient')
+    .attr('id', 'global-disp-gradient')
+    .attr('gradientUnits', 'userSpaceOnUse')
+    .attr('x1', margin.left).attr('y1', 0)
+    .attr('x2', margin.left + w).attr('y2', 0);
+
+  const stops = 20; // number of samples along your ramp
+  for (let i = 0; i <= stops; i++) {
+    const t = i / stops;
+    const time = globalTimeExtent[0] + t * (globalTimeExtent[1] - globalTimeExtent[0]);
+    grad.append('stop')
+      .attr('offset', `${t * 100}%`)
+      .attr('stop-color', globalColorScale(time));
+  }
+
+  // compute per-step displacement
+  const dispData = data.map((d,i,arr) => {
+    if (i === 0) return { time_s: d.time_s, disp: 0 };
+    const p = arr[i-1];
+    const dx = d.x_mm - p.x_mm,
+          dy = d.y_mm - p.y_mm,
+          dz = d.z_mm - p.z_mm;
+    return { time_s: d.time_s, disp: Math.sqrt(dx*dx + dy*dy + dz*dz) };
+  });
+
+  // scales
+  const xScale = d3.scaleLinear()
+    .domain(globalTimeExtent).range([0, w]);
+  const yScale = d3.scaleLinear()
+    .domain([0, d3.max(dispData, d => d.disp)]).range([h, 0]);
+
   const g = svg.append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
-  
-  // build displacement array
-  const dispData = data.map((d,i,arr) => {
-    if (i===0) return { time_s:d.time_s, disp:0 };
-    const prev = arr[i-1];
-    const dx = d.x_mm - prev.x_mm;
-    const dy = d.y_mm - prev.y_mm;
-    const dz = d.z_mm - prev.z_mm;
-    return { time_s:d.time_s, disp:Math.sqrt(dx*dx+dy*dy+dz*dz) };
-  });
-  
-  const xScale = d3.scaleLinear()
-    .domain(d3.extent(dispData, d=>d.time_s))
-    .range([0, w]);
-  
-  const yScale = d3.scaleLinear()
-    .domain([0, d3.max(dispData, d=>d.disp)])
-    .range([h, 0]);
 
-  const xAxis = d3.axisBottom(xScale).ticks(12);
-  const yAxis = d3.axisLeft(yScale);
-  
+  // axes
   g.append('g')
-    .attr('class', 'x axis')
     .attr('transform', `translate(0,${h})`)
-    .call(xAxis);
-  
+    .call(d3.axisBottom(xScale).ticks(12));
   g.append('g')
-    .attr('class', 'y axis')
-    .call(yAxis);
-  
+    .call(d3.axisLeft(yScale).ticks(5));
+
+  // line generator & draw
   const line = d3.line()
-    .x(d=>xScale(d.time_s))
-    .y(d=>yScale(d.disp));
-  
-  g.append('path')
+    .x(d => xScale(d.time_s))
+    .y(d => yScale(d.disp));
+
+  const path = g.append('path')
     .datum(dispData)
-    .attr('fill', 'none')
-    .attr('stroke', 'steelblue')
-    .attr('stroke-width', 1.5)
-    .attr('d', line);
+    .attr('fill','none')
+    .attr('stroke','url(#global-disp-gradient)')
+    .attr('stroke-width',1.5)
+    .attr('d',line);
+
+  // animate draw
+  const L = path.node().getTotalLength();
+  const T = (dispData.length - 1) + 200;
+  path
+    .attr('stroke-dasharray', `${L} ${L}`)
+    .attr('stroke-dashoffset', L)
+    .transition().duration(T).ease(d3.easeLinear)
+    .attr('stroke-dashoffset', 0);
 };

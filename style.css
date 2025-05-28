@@ -60,6 +60,12 @@ top-right-button {
   background: #e0e0e0;
 }
 
+
+#disp-graph-container label {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
 #disp-chart {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
