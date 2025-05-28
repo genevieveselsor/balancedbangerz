@@ -41,8 +41,11 @@ let groups = {
 // FUNCTION filter data by marker and genre
 function getObjectsByValue(data, marker, genre) {
     if (genre === "silence") {
-        // return data.filter(obj => obj["marker"] === marker && obj["genre"] === genre &&  obj["block"] === "1");
-        // HAVE TO CHOOSE BLOCK FOR SILENCE
+      return data.filter(d =>
+        d.marker === marker &&
+        d.genre  === "silence" &&
+        d.block  === "1"
+      );
     }
     return data.filter(obj => obj["marker"] === marker && obj["genre"] === genre);
 }
@@ -148,7 +151,9 @@ function renderGraph(data, axes, x, y) {
 
 // FUNCTION render axes graphs
 function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
-
+    ["xy-top","yz-side","xz-front"].forEach(id =>
+        d3.select(`#${id}`).selectAll("svg").remove()
+      ); // Clear existing axes graphs
     const filteredData = getObjectsByValue(groups[selectedGroup], selectedMarker, selectedGenre);
     console.log(filteredData);
 
@@ -165,12 +170,11 @@ function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) {
     });
 
     console.log("done rendering");
-
+    renderDispGraph(filteredData);
 };
 
 // FUNCTION update graphs for filters
 function updateAxesGraph() {
-    d3.selectAll("svg").remove(); // Clear existing graphs
     
     let selectedGroup = d3.select("#group-filter").property("value");
     let selectedMarker = d3.select("#marker-filter").property("value");
@@ -214,3 +218,64 @@ const tooltip = d3.select("body").append("div")
   .style("display", "none");
 
 ///////////////////////////////////////////////////////
+
+// FUNCTION render displacement graph
+function renderDispGraph(data) {
+  // clear old
+  d3.select('#disp-chart').selectAll('*').remove();
+  
+  const width  = 900;
+  const height = 300;
+  const margin = { top: 40, right: 20, bottom: 30, left: 60 };
+  const w = width - margin.left - margin.right;
+  const h = height - margin.top - margin.bottom;
+  
+  const svg = d3.select('#disp-chart')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+  
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+  
+  // build displacement array
+  const dispData = data.map((d,i,arr) => {
+    if (i===0) return { time_s:d.time_s, disp:0 };
+    const prev = arr[i-1];
+    const dx = d.x_mm - prev.x_mm;
+    const dy = d.y_mm - prev.y_mm;
+    const dz = d.z_mm - prev.z_mm;
+    return { time_s:d.time_s, disp:Math.sqrt(dx*dx+dy*dy+dz*dz) };
+  });
+  
+  const xScale = d3.scaleLinear()
+    .domain(d3.extent(dispData, d=>d.time_s))
+    .range([0, w]);
+  
+  const yScale = d3.scaleLinear()
+    .domain([0, d3.max(dispData, d=>d.disp)])
+    .range([h, 0]);
+
+  const xAxis = d3.axisBottom(xScale).ticks(12);
+  const yAxis = d3.axisLeft(yScale);
+  
+  g.append('g')
+    .attr('class', 'x axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(xAxis);
+  
+  g.append('g')
+    .attr('class', 'y axis')
+    .call(yAxis);
+  
+  const line = d3.line()
+    .x(d=>xScale(d.time_s))
+    .y(d=>yScale(d.disp));
+  
+  g.append('path')
+    .datum(dispData)
+    .attr('fill', 'none')
+    .attr('stroke', 'steelblue')
+    .attr('stroke-width', 1.5)
+    .attr('d', line);
+};
