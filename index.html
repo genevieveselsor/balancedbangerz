@@ -16,21 +16,92 @@
 
     <h3>head animation</h3>
 
+    <h3>Filters</h3>
+    <div id="filters">
+        <div id="group-filter-container">
+            <label for="group">Choose a Group:</label>
+
+            <select name="group" id="group-filter">
+                <option value="NM0001">NM0001</option>
+                <option value="NM0004">NM0004</option>
+                <option value="NM0011">NM0011</option>
+            </select>
+            <p>Groups are as follows</p>
+            <ul>
+                <li>NM0001: ACABDA</li>
+                    <ul>
+                        <li>Silence</li>
+                        <li>Salsa</li>
+                        <li>Silence</li>
+                        <li>Meditation</li>
+                        <li>EDM</li>
+                        <li>Silence</li>
+                    </ul>
+                <li>NM0004: ABCDAA</li>
+                    <ul>
+                        <li>Silence</li>
+                        <li>Meditation</li>
+                        <li>Salsa</li>
+                        <li>EDM</li>
+                        <li>Silence</li>
+                        <li>Silence</li>
+                    </ul>
+                <li>NM0011: AABDCA</li>
+                    <ul>
+                        <li>Silence</li>
+                        <li>Silence</li>
+                        <li>Meditation</li>
+                        <li>EDM</li>
+                        <li>Salsa</li>
+                        <li>Silence</li>
+                    </ul>
+            </ul>
+        </div>
+
+        <div id="genre-filter-container">
+            <label for="genre">Choose a Sound:</label>
+
+            <select name="genre" id="genre-filter">
+                <option value="silence">Silence</option>
+                <option value="salsa">Salsa</option>
+                <option value="meditation">Meditation</option>
+                <option value="edm">EDM</option>
+            </select>
+        </div>
+
+        <div id="marker-filter-container">
+            <label for="marker">Choose an Individual:</label>
+
+            <select name="marker" id="marker-filter">
+                <option value="S1">S1</option>
+                <option value="S2">S2</option>
+                <option value="S3">S3</option>
+                <option value="S4">S4</option>
+                <option value="S5">S5</option>
+                <option value="S6">S6</option>
+                <option value="S7">S7</option>
+                <option value="S8">S8</option>
+                <option value="S9">S9</option>
+                <option value="S10">S10</option>
+                <option value="S11">S11</option>
+                <option value="S12">S12</option>
+            </select>
+        </div>
+
+    </div>
+
     <h3>Axes Graphs</h3>
     <div id="axes-graphs">
-        <div>
+        <div id="xy-top">
             <label>Top</label>
-            <svg id="xy-top"></svg>
         </div>
         
-        <div>
+        <div id="yz-side">
             <label>Side</label>
-            <svg id="yz-side"></svg>
         </div>
         
-        <div>
+        <div id="xz-front">
             <label>Front</label>
-            <svg id="xz-front"></svg>
         </div>
         
     </div>

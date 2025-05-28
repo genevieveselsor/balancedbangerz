@@ -29,6 +29,15 @@ const NM0011Data = await loadData('NM0011-cleaned');
 
 ///////////////////////////////////////////////////////
 
+// GLOBAL VARIABLES
+let groups = {
+    "NM0001": NM0001Data,
+    "NM0004": NM0004Data,
+    "NM0011": NM0011Data,
+};
+
+///////////////////////////////////////////////////////
+
 // FUNCTION filter data by marker and genre
 function getObjectsByValue(data, marker, genre) {
     if (genre === "silence") {
@@ -37,10 +46,6 @@ function getObjectsByValue(data, marker, genre) {
     }
     return data.filter(obj => obj["marker"] === marker && obj["genre"] === genre);
 }
-
-// test function
-const test = getObjectsByValue(NM0001Data, "S1", "salsa");
-console.log(test);
 
 ///////////////////////////////////////////////////////
 
@@ -52,6 +57,7 @@ function renderGraph(data, axes, x, y) {
 
     // Update responsive SVG
     const svg = d3.select(`#${axes}`)
+        .append("svg")
         .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
         .attr("preserveAspectRatio", "xMidYMid meet")
         .style("width", "100%")   // responsive width
@@ -94,8 +100,12 @@ function renderGraph(data, axes, x, y) {
 };
 
 // FUNCTION render axes graphs
-function renderAxesGraph(data) {
-    if (data.length === 0) {
+function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
+
+    const filteredData = getObjectsByValue(groups[selectedGroup], selectedMarker, selectedGenre);
+    console.log(filteredData);
+
+    if (!filteredData || filteredData.length === 0) {
         console.warn("No data found.");
         return;
     };
@@ -103,10 +113,46 @@ function renderAxesGraph(data) {
     const ids = ["xy-top", "yz-side", "xz-front"];
 
     ids.forEach((id) => {
-        renderGraph(data, id, id[0], id[1]);
+        renderGraph(filteredData, id, id[0], id[1]);
+        console.log('rendered one')
     });
+
+    console.log("done rendering");
 
 };
 
+// FUNCTION update graphs for filters
+function updateAxesGraph() {
+    d3.selectAll("svg").remove(); // Clear existing graphs
+    
+    let selectedGroup = d3.select("#group-filter").property("value");
+    let selectedMarker = d3.select("#marker-filter").property("value");
+    let selectedGenre = d3.select("#genre-filter").property("value");
 
-renderAxesGraph(test);
+    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+
+    // filter data by group
+    d3.select("#group-filter").on("change", function () {
+        selectedGroup = d3.select(this).property("value");
+        console.log("Selected group:", selectedGroup);
+        renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+    });
+    
+    // filter data by genre
+    d3.select("#genre-filter").on("change", function () {
+        selectedGenre = d3.select(this).property("value");
+        console.log("Selected genre:", selectedGenre);
+        renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+    });
+
+    // filter data by marker
+    d3.select("#marker-filter").on("change", function () {
+        selectedMarker = d3.select(this).property("value");
+        console.log("Selected marker:", selectedMarker);
+        renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+    });  
+}
+
+updateAxesGraph();
+
+///////////////////////////////////////////////////////
