@@ -78,6 +78,10 @@ function renderGraph(data, axes, x, y) {
     const yScale = d3.scaleLinear()
         .domain(d3.extent(data, d => d[`${y}_mm`]))
         .range([innerHeight, 0]);
+    
+    const timeExtent = d3.extent(data, d => d.time_s);
+    const colorScale = d3.scaleSequential(d3.interpolateTurbo)
+                       .domain(timeExtent);
 
     g.append("g")
         .attr("class", "x-axis")
@@ -88,15 +92,58 @@ function renderGraph(data, axes, x, y) {
         .attr("class", "y-axis")
         .call(d3.axisLeft(yScale));
 
+    // g.selectAll(".point")
+    //     .data(data)
+    //     .enter()
+    //     .append("circle")
+    //     .attr("class", "point")
+    //     .attr("cx", d => xScale(d[`${x}_mm`]))
+    //     .attr("cy", d => yScale(d[`${y}_mm`]))
+    //     .attr("r", 3)
+    //     .style("fill", "steelblue");
+    
     g.selectAll(".point")
-        .data(data)
-        .enter()
-        .append("circle")
+    .data(data)
+    .enter().append("circle")
         .attr("class", "point")
         .attr("cx", d => xScale(d[`${x}_mm`]))
         .attr("cy", d => yScale(d[`${y}_mm`]))
-        .attr("r", 3)
-        .style("fill", "steelblue");
+        .attr("r", 4)
+        .style("fill", d => colorScale(d.time_s))
+        .style("opacity", 0)
+    .transition()
+        .delay((d,i) => i)
+        .duration(200)
+        .style("opacity", 1);                        
+    
+    g.selectAll(".hover-target")
+      .data(data)
+      .enter().append("circle")
+        .attr("class", "hover-target")
+        .attr("cx", d => xScale(d[`${x}_mm`]))
+        .attr("cy", d => yScale(d[`${y}_mm`]))
+        .attr("r", 8)                 // slightly larger than your visible point
+        .attr("fill", "transparent")  // invisible “hit” area
+        .on("mouseover", (event, d) => {
+          tooltip
+            .style("left",  `${event.pageX + 10}px`)
+            .style("top",   `${event.pageY - 25}px`)
+            .style("display", "block")
+            .html(`
+              <strong>${x.toUpperCase()}:</strong> ${d[`${x}_mm`].toFixed(1)}<br/>
+              <strong>${y.toUpperCase()}:</strong> ${d[`${y}_mm`].toFixed(1)}<br/>
+              <strong>time (seconds):</strong> ${d.time_s.toFixed(2)}
+            `);
+        })
+        .on("mousemove", (event) => {
+          // move tooltip with mouse
+          tooltip
+            .style("left",  `${event.pageX + 10}px`)
+            .style("top",   `${event.pageY - 25}px`);
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
+        });
 };
 
 // FUNCTION render axes graphs
@@ -154,5 +201,16 @@ function updateAxesGraph() {
 }
 
 updateAxesGraph();
+
+const tooltip = d3.select("body").append("div")
+  .attr("class", "d3-tooltip")
+  .style("position", "absolute")
+  .style("pointer-events", "none")
+  .style("padding", "4px 8px")
+  .style("background", "rgba(255,255,255,0.9)")
+  .style("border", "1px solid #ccc")
+  .style("border-radius", "4px")
+  .style("font-size", "12px")
+  .style("display", "none");
 
 ///////////////////////////////////////////////////////
