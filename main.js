@@ -54,7 +54,7 @@ function renderGraph(data, axes, x, y) {
     const svg = d3.select(`#${axes}`)
         .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
         .attr("preserveAspectRatio", "xMidYMid meet")
-        .style("width", "33%")   // responsive width
+        .style("width", "100%")   // responsive width
         .style("height", "auto"); // maintain aspect ratio
 
     const margin = { top: 20, right: 30, bottom: 30, left: 40 };
