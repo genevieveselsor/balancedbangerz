@@ -232,30 +232,36 @@ const tooltip = d3.select("body").append("div")
 
 // FUNCTION render displacement graph
 function renderDispGraph(data) {
+  // dimensions & margins
   const width  = 900;
   const height = 300;
   const margin = { top: 40, right: 20, bottom: 30, left: 60 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
 
-  // clear old
-  d3.select('#disp-chart').selectAll('*').remove();
+  // clear any old svg in the container
+  const container = d3.select('#disp-chart');
+  container.selectAll('svg').remove();
 
-  // setup svg
-  const svg = d3.select('#disp-chart')
+  // append a fresh <svg>
+  const svg = container.append('svg')
     .attr('viewBox', `0 0 ${width} ${height}`)
-    .style('width', '100%').style('height', 'auto');
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '100%')
+    .style('height', 'auto');
 
-  // build gradient with multiple stops
+  // define gradient stops as before
   svg.select('defs').remove();
   const defs = svg.append('defs');
   const grad = defs.append('linearGradient')
     .attr('id', 'global-disp-gradient')
     .attr('gradientUnits', 'userSpaceOnUse')
-    .attr('x1', margin.left).attr('y1', 0)
-    .attr('x2', margin.left + w).attr('y2', 0);
+    .attr('x1', margin.left)
+    .attr('y1', 0)
+    .attr('x2', margin.left + w)
+    .attr('y2', 0);
 
-  const stops = 20; // number of samples along your ramp
+  const stops = 20;
   for (let i = 0; i <= stops; i++) {
     const t = i / stops;
     const time = globalTimeExtent[0] + t * (globalTimeExtent[1] - globalTimeExtent[0]);
@@ -264,10 +270,10 @@ function renderDispGraph(data) {
       .attr('stop-color', globalColorScale(time));
   }
 
-  // compute per-step displacement
-  const dispData = data.map((d,i,arr) => {
+  // compute displacement data
+  const dispData = data.map((d, i, arr) => {
     if (i === 0) return { time_s: d.time_s, disp: 0 };
-    const p = arr[i-1];
+    const p = arr[i - 1];
     const dx = d.x_mm - p.x_mm,
           dy = d.y_mm - p.y_mm,
           dz = d.z_mm - p.z_mm;
@@ -276,10 +282,13 @@ function renderDispGraph(data) {
 
   // scales
   const xScale = d3.scaleLinear()
-    .domain(globalTimeExtent).range([0, w]);
+    .domain(globalTimeExtent)
+    .range([0, w]);
   const yScale = d3.scaleLinear()
-    .domain([0, d3.max(dispData, d => d.disp)]).range([h, 0]);
+    .domain([0, d3.max(dispData, d => d.disp)])
+    .range([h, 0]);
 
+  // drawing group
   const g = svg.append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -290,45 +299,19 @@ function renderDispGraph(data) {
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5));
 
-  // line generator & draw
+  // line generator
   const line = d3.line()
     .x(d => xScale(d.time_s))
     .y(d => yScale(d.disp));
 
+  // draw & animate path
   const path = g.append('path')
     .datum(dispData)
     .attr('fill','none')
     .attr('stroke','url(#global-disp-gradient)')
     .attr('stroke-width',1.5)
     .attr('d',line);
-  
-    // add hover targets for tooltip
-    g.selectAll('.disp-hover')
-    .data(dispData)
-    .enter().append('circle')
-      .attr('class', 'disp-hover')
-      .attr('cx', d => xScale(d.time_s))
-      .attr('cy', d => yScale(d.disp))
-      .attr('r', 8)                 // big enough to catch the mouse
-      .attr('fill', 'transparent')  // invisible hit area
-      .on('mouseover', (event, d) => {
-        tooltip
-          .style('display', 'block')
-          .html(`
-            <strong>time (seconds):</strong> ${d.time_s.toFixed(2)} s<br/>
-            <strong>disp:</strong> ${d.disp.toFixed(2)} mm
-          `);
-      })
-      .on('mousemove', event => {
-        tooltip
-          .style('left',  `${event.pageX + 10}px`)
-          .style('top',   `${event.pageY - 25}px`);
-      })
-      .on('mouseout', () => {
-        tooltip.style('display', 'none');
-      });
 
-  // animate draw
   const L = path.node().getTotalLength();
   const T = (dispData.length - 1) + 200;
   path
@@ -336,4 +319,28 @@ function renderDispGraph(data) {
     .attr('stroke-dashoffset', L)
     .transition().duration(T).ease(d3.easeLinear)
     .attr('stroke-dashoffset', 0);
+
+  // tooltip hit‐areas
+  g.selectAll('.disp-hover')
+    .data(dispData)
+    .enter().append('circle')
+      .attr('class','disp-hover')
+      .attr('cx', d => xScale(d.time_s))
+      .attr('cy', d => yScale(d.disp))
+      .attr('r', 8)
+      .attr('fill','transparent')
+      .on('mouseover', (event,d) => {
+        tooltip
+          .style('display','block')
+          .html(`
+            <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
+            <strong>disp:</strong> ${d.disp.toFixed(2)} mm
+          `);
+      })
+      .on('mousemove', event => {
+        tooltip
+          .style('left',  `${event.pageX+10}px`)
+          .style('top',   `${event.pageY-25}px`);
+      })
+      .on('mouseout', () => tooltip.style('display','none'));
 };
