@@ -334,7 +334,7 @@ function renderDispGraph(data) {
           .style('display','block')
           .html(`
             <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
-            <strong>disp:</strong> ${d.disp.toFixed(2)} mm
+            <strong>disp:</strong> ${d.disp.toFixed(3)} mm
           `);
       })
       .on('mousemove', event => {
