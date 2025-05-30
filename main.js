@@ -329,7 +329,7 @@ function renderDispGraph(data) {
       .attr('cy', d => yScale(d.disp))
       .attr('r', 8)
       .attr('fill','transparent')
-      .on('mouseover', (event,d) => {
+      .on('mouseover', (event, d) => {
         tooltip
           .style('display','block')
           .html(`
