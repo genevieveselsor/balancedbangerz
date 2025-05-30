@@ -1,4 +1,5 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
+import scrollama from 'https://cdn.jsdelivr.net/npm/scrollama@3.2.0/+esm';
 
 // FUNCTION import CSV file
 async function loadData(filename) {
@@ -46,6 +47,9 @@ const globalTimeExtent = d3.extent(allData, d => d.time_s);
 const globalColorScale = d3.scaleSequential(d3.interpolateTurbo)
                            .domain(globalTimeExtent);
 
+// for animation
+let dispPath, dispLength, dispDataGlobal;
+let axesPoints = [];
 
 ///////////////////////////////////////////////////////
 
@@ -115,20 +119,32 @@ function renderGraph(data, axes, x, y) {
     //     .attr("cy", d => yScale(d[`${y}_mm`]))
     //     .attr("r", 3)
     //     .style("fill", "steelblue");
-    
-    g.selectAll(".point")
+
+    const pts = g.selectAll('circle.point')
     .data(data)
-    .enter().append("circle")
-        .attr("class", "point")
-        .attr("cx", d => xScale(d[`${x}_mm`]))
-        .attr("cy", d => yScale(d[`${y}_mm`]))
-        .attr("r", 4)
-        .style("fill", d => globalColorScale(d.time_s))
-        .style("opacity", 0)
-    .transition()
-        .delay((d,i) => i)
-        .duration(200)
-        .style("opacity", 1);                        
+    .enter().append('circle')
+      .attr('class','point')
+      .attr('cx', d => xScale(d[`${x}_mm`]))
+      .attr('cy', d => yScale(d[`${y}_mm`]))
+      .attr('r', 4)
+      .style('fill', d => globalColorScale(d.time_s))
+      .style('opacity', 0);
+
+    axesPoints.push(pts);
+    
+    // g.selectAll(".point")
+    // .data(data)
+    // .enter().append("circle")
+    //     .attr("class", "point")
+    //     .attr("cx", d => xScale(d[`${x}_mm`]))
+    //     .attr("cy", d => yScale(d[`${y}_mm`]))
+    //     .attr("r", 4)
+    //     .style("fill", d => globalColorScale(d.time_s))
+    //     .style("opacity", 0)
+    // .transition()
+    //     .delay((d,i) => i)
+    //     .duration(200)
+    //     .style("opacity", 1);                        
     
     g.selectAll(".hover-target")
       .data(data)
@@ -304,21 +320,26 @@ function renderDispGraph(data) {
     .x(d => xScale(d.time_s))
     .y(d => yScale(d.disp));
 
-  // draw & animate path
-  const path = g.append('path')
-    .datum(dispData)
+  dispDataGlobal = dispData;
+  dispPath = g.append('path')
+    .datum(dispDataGlobal)
     .attr('fill','none')
     .attr('stroke','url(#global-disp-gradient)')
     .attr('stroke-width',1.5)
-    .attr('d',line);
+    .attr('d', line);
 
-  const L = path.node().getTotalLength();
-  const T = (dispData.length - 1) + 200;
-  path
-    .attr('stroke-dasharray', `${L} ${L}`)
-    .attr('stroke-dashoffset', L)
-    .transition().duration(T).ease(d3.easeLinear)
-    .attr('stroke-dashoffset', 0);
+  // const L = path.node().getTotalLength();
+  // const T = (dispData.length - 1) + 200;
+  // path
+  //   .attr('stroke-dasharray', `${L} ${L}`)
+  //   .attr('stroke-dashoffset', L)
+  //   .transition().duration(T).ease(d3.easeLinear)
+  //   .attr('stroke-dashoffset', 0);
+
+  dispLength = dispPath.node().getTotalLength();
+  dispPath
+    .attr('stroke-dasharray', `${dispLength} ${dispLength}`)
+    .attr('stroke-dashoffset', dispLength);
 
   // tooltip hit‐areas
   g.selectAll('.disp-hover')
@@ -344,3 +365,150 @@ function renderDispGraph(data) {
       })
       .on('mouseout', () => tooltip.style('display','none'));
 };
+
+///////////////////////////////////////////////////////
+
+// FUNCTION animate plots
+function animateAxesPlots() {
+  axesPoints.forEach(pts => {
+    pts.transition()
+      .delay((d, i) => i)
+      .duration(400)
+      .attr('r', 4)
+      .style('opacity', 1);
+  });
+}
+
+function animateDispGraph() {
+  dispPath
+    .transition()
+    .duration((dispDataGlobal.length - 1) + 400)
+    .ease(d3.easeLinear)
+    .attr('stroke-dashoffset', 0);
+}
+
+///////////////////////////////////////////////////////
+
+// GLOBAL HEAD VARIABLES
+let projection, path, spherePath, graticulePath, eyes;
+
+// FUNCTION render head sphere
+function renderHead() {
+  const svg = d3
+    .select('#head')
+    .append('svg')
+    .attr('id', 'vis')
+    .attr('viewBox', '0 0 400 400')
+    .style('width', '100%')
+    .style('height', 'auto');
+
+  projection = d3
+    .geoOrthographic()
+    .scale(150)
+    .translate([200, 200])
+    .clipAngle(90);
+
+  path = d3.geoPath(projection);
+  const defs = svg.append('defs');
+
+  const grad = defs
+    .append('linearGradient')
+    .attr('id', 'shade')
+    .attr('gradientUnits', 'userSpaceOnUse')
+    .attr('x1', 200)
+    .attr('y1', 0)
+    .attr('x2', 200)
+    .attr('y2', 400);
+
+  grad.append('stop').attr('offset', '0%').attr('stop-color', '#FFF9C4');
+  grad.append('stop').attr('offset', '100%').attr('stop-color', '#FDD835');
+
+  const g = svg.append('g');
+
+  spherePath = g
+    .append('path')
+    .datum({type: 'Sphere'})
+    .attr('d', path)
+    .attr('fill', 'url(#shade)')
+    .attr('stroke', '#666');
+
+  graticulePath = g
+    .append('path')
+    .datum(d3.geoGraticule()())
+    .attr('d', path)
+    .attr('fill', 'none')
+    .attr('stroke', '#666')
+    .attr('stroke-width', 0.5);
+    
+  eyes = g
+    .selectAll('circle.eye')
+    .data([[-25, 10], [25, 10]])
+    .join('circle')
+    .attr('class', 'eye')
+    .attr('r', 15)
+    .attr('fill', '#333')
+    .attr('cx', d => projection(d)[0])
+    .attr('cy', d => projection(d)[1]);
+}
+
+renderHead();
+
+const svg = d3.select('#head svg');
+const svgNode = svg.node();
+const maxYaw = 10;
+const maxPitch = 8;
+const cx = 200;
+const cy = 200;
+let targetYaw = 0;
+let targetPitch = 0;
+let currentYaw = 0;
+let currentPitch = 0;
+
+function handleMouse(event) {
+  const [mx,my] = d3.pointer(event, svg.node());
+  targetYaw = ((mx - cx)/cx) * maxYaw;
+  targetPitch = ((cy - my)/cy) * maxPitch;
+}
+window.addEventListener('mousemove', handleMouse);
+
+d3.timer(() => {
+  currentYaw += (targetYaw - currentYaw) * 0.1;
+  currentPitch += (targetPitch - currentPitch) * 0.1;
+  projection.rotate([currentYaw, currentPitch]);
+  spherePath.attr('d', path);
+  graticulePath.attr('d', path);
+  eyes
+    .attr('cx', d => projection(d)[0])
+    .attr('cy', d => projection(d)[1]);
+});
+
+///////////////////////////////////////////////////////
+
+// scrollytelling script
+const scroller = scrollama();
+const steps = document.querySelectorAll('#story .step').length;
+scroller
+  .setup({
+    container: '#scrolly',
+    graphic: '#graphic',
+    step: '#story .step',
+    offset: 0.5,
+  })
+  .onStepEnter(({index}) => {
+    if(index === 1) {
+      window.removeEventListener('mousemove', handleMouse);
+      targetYaw=0;
+      targetPitch=0;
+      projection.rotate([0,0]);
+      spherePath.attr('d',path);
+      eyes.attr('cx',d=>projection(d)[0]).attr('cy',d=>projection(d)[1]);
+    } else {
+      window.addEventListener('mousemove', handleMouse);
+    }
+  })
+  .onStepExit(({index}) => {
+    if (index === steps - 1) {
+      animateAxesPlots();
+      animateDispGraph();
+    }
+  });
