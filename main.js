@@ -198,6 +198,8 @@ function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) {
 
     console.log("done rendering");
     renderDispGraph(filteredData);
+    animateAxesPlots();
+    animateDispGraph();
 };
 
 // FUNCTION update graphs for filters
@@ -231,7 +233,7 @@ function updateAxesGraph() {
     });  
 }
 
-updateAxesGraph();
+// updateAxesGraph();
 
 const tooltip = d3.select("body").append("div")
   .attr("class", "d3-tooltip")
@@ -508,7 +510,21 @@ scroller
   })
   .onStepExit(({index}) => {
     if (index === steps - 1) {
-      animateAxesPlots();
-      animateDispGraph();
+      updateAxesGraph(data);
     }
   });
+
+const title = document.getElementById('title');
+const startArrow = document.getElementById('start-arrow');
+
+startArrow.addEventListener('click', () => {
+  title.classList.add('hidden');
+});
+
+window.addEventListener('scroll', () => {
+  if (!title.classList.contains('hidden')) {
+    title.classList.add('hidden');
+  }
+});
+
+updateAxesGraph();

@@ -1,6 +1,6 @@
-:root {
+/* :root {
   margin: 0.75em;
-}
+} */
 
 body {
   font: 100%/1.5 system-ui;
@@ -70,28 +70,23 @@ top-right-button {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-#content {
-  margin-top: 50vh;
-}
-
 #scrolly {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
-  margin: 2rem 0;
   transition: opacity 0.5s ease; 
 }
 
 #story {
   flex: 1;
-  padding: 1rem;
   transition: opacity 0.5s ease;
 }
 
 #story .step {
-  min-height: 100vh;
+  min-height: 75vh;
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 0.75em;
 }
 
 #graphic {
@@ -112,13 +107,52 @@ top-right-button {
   z-index: 1000;
 }
 
-#hero {
+#title {
   display: flex;
-  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  flex-direction: column;
   align-items: center;
-  height: 45vh;
+  justify-content: center;
+  z-index: 999;
+  pointer-events: auto;
+  transition: opacity 0.67s ease-in-out;
+}
 
-  h1 {
-    font-size: 300%;
+#title h1 {
+  font-size: 4rem;
+  margin: 0;
+}
+
+#start-arrow {
+  position: absolute;
+  bottom: 1.5em;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 0.75rem solid transparent;
+  border-right: 0.75rem solid transparent;
+  border-top: 1rem solid black;
+  cursor: pointer;
+  animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 30%, 50%, 80%, 100% {
+    transform: translateX(-50%) translateY(0);
   }
+  40% {
+    transform: translateX(-50%) translateY(0.5em);
+  }
+  60% {
+    transform: translateX(-50%) translateY(0.25em);
+  }
+}
+
+#title.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
