@@ -55,15 +55,21 @@ const NM0004Data = await loadData('NM0004-cleaned');
 // flatten all groups into one array
 const allData = [...NM0004Data];
 
+let genreToColor = {
+  'silence': d3.interpolateBlues,
+  'salsa': d3.interpolateOranges,
+  'meditation': d3.interpolateGreens,
+  'edm': d3.interpolateReds,
+};
+
 // global time range across every sample
 const globalTimeExtent = d3.extent(allData, d => d.time_s);
 
 // one single color scale for every chart
-const globalColorScale = d3.scaleSequential(d3.interpolateTurbo)
-                           .domain(globalTimeExtent);
+let globalColorScale = d3.scaleSequential(genreToColor['silence']).domain(globalTimeExtent);
 
 // for animation
-let dispPath, dispLength, dispDataGlobal;
+let dispPath, dispDataGlobal;
 let axesPoints = [];
 
 ///////////////////////////////////////////////////////
@@ -89,189 +95,189 @@ let axesPoints = [];
 ///////////////////////////////////////////////////////
 
 // FUNCTION HELPER to render one axis graph
-function renderGraph(data, axes, x, y) {
+// function renderGraph(data, axes, x, y) {
 
-    const aspectWidth = 500;
-    const aspectHeight = 500;
+//     const aspectWidth = 500;
+//     const aspectHeight = 500;
 
-    // Update responsive SVG
-    const svg = d3.select(`#${axes}`)
-        .append("svg")
-        .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
-        .attr("preserveAspectRatio", "xMidYMid meet")
-        .style("width", "100%")   // responsive width
-        .style("height", "auto"); // maintain aspect ratio
+//     // Update responsive SVG
+//     const svg = d3.select(`#${axes}`)
+//         .append("svg")
+//         .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
+//         .attr("preserveAspectRatio", "xMidYMid meet")
+//         .style("width", "100%")   // responsive width
+//         .style("height", "auto"); // maintain aspect ratio
 
-    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-    const innerWidth = aspectWidth - margin.left - margin.right;
-    const innerHeight = aspectHeight - margin.top - margin.bottom;
+//     const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+//     const innerWidth = aspectWidth - margin.left - margin.right;
+//     const innerHeight = aspectHeight - margin.top - margin.bottom;
 
-    const g = svg.append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+//     const g = svg.append("g")
+//         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Scales based on fixed internal coordinate system
-    const xScale = d3.scaleLinear()
-        .domain([-50, 60])
-        .range([0, innerWidth]);
+//     // Scales based on fixed internal coordinate system
+//     const xScale = d3.scaleLinear()
+//         .domain([-50, 60])
+//         .range([0, innerWidth]);
 
-    const yScale = d3.scaleLinear()
-        .domain([-50, 60])
-        .range([innerHeight, 0]);
+//     const yScale = d3.scaleLinear()
+//         .domain([-50, 60])
+//         .range([innerHeight, 0]);
 
-    g.append("g")
-        .attr("class", "x-axis")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(xScale));
+//     g.append("g")
+//         .attr("class", "x-axis")
+//         .attr("transform", `translate(0,${innerHeight})`)
+//         .call(d3.axisBottom(xScale));
 
-    g.append("g")
-        .attr("class", "y-axis")
-        .call(d3.axisLeft(yScale));
+//     g.append("g")
+//         .attr("class", "y-axis")
+//         .call(d3.axisLeft(yScale));
 
-    g.append("text")
-        .attr("class", "x-label")
-        .attr("x", innerWidth / 2)
-        .attr("y", innerHeight + 30)
-        .attr("text-anchor", "middle")
-        .text(`${x}_mm`);
+//     g.append("text")
+//         .attr("class", "x-label")
+//         .attr("x", innerWidth / 2)
+//         .attr("y", innerHeight + 30)
+//         .attr("text-anchor", "middle")
+//         .text(`${x}_mm`);
 
-    g.append("text")
-        .attr("class", "y-label")
-        .attr("x", -innerHeight / 2)
-        .attr("y", -25)
-        .attr("transform", "rotate(-90)")
-        .attr("text-anchor", "middle")
-        .text(`${y}_mm`);
+//     g.append("text")
+//         .attr("class", "y-label")
+//         .attr("x", -innerHeight / 2)
+//         .attr("y", -25)
+//         .attr("transform", "rotate(-90)")
+//         .attr("text-anchor", "middle")
+//         .text(`${y}_mm`);
 
-    // g.selectAll(".point")
-    //     .data(data)
-    //     .enter()
-    //     .append("circle")
-    //     .attr("class", "point")
-    //     .attr("cx", d => xScale(d[`${x}_mm`]))
-    //     .attr("cy", d => yScale(d[`${y}_mm`]))
-    //     .attr("r", 3)
-    //     .style("fill", "steelblue");
+//     // g.selectAll(".point")
+//     //     .data(data)
+//     //     .enter()
+//     //     .append("circle")
+//     //     .attr("class", "point")
+//     //     .attr("cx", d => xScale(d[`${x}_mm`]))
+//     //     .attr("cy", d => yScale(d[`${y}_mm`]))
+//     //     .attr("r", 3)
+//     //     .style("fill", "steelblue");
 
-    const pts = g.selectAll('circle.point')
-    .data(data)
-    .enter().append('circle')
-      .attr('class','point')
-      .attr('cx', d => xScale(d[`${x}_mm`]))
-      .attr('cy', d => yScale(d[`${y}_mm`]))
-      .attr('r', 4)
-      .style('fill', d => globalColorScale(d.time_s))
-      .style('opacity', 0);
+//     const pts = g.selectAll('circle.point')
+//     .data(data)
+//     .enter().append('circle')
+//       .attr('class','point')
+//       .attr('cx', d => xScale(d[`${x}_mm`]))
+//       .attr('cy', d => yScale(d[`${y}_mm`]))
+//       .attr('r', 4)
+//       .style('fill', d => globalColorScale(d.time_s))
+//       .style('opacity', 0);
 
-    axesPoints.push(pts);
+//     axesPoints.push(pts);
     
-    // g.selectAll(".point")
-    // .data(data)
-    // .enter().append("circle")
-    //     .attr("class", "point")
-    //     .attr("cx", d => xScale(d[`${x}_mm`]))
-    //     .attr("cy", d => yScale(d[`${y}_mm`]))
-    //     .attr("r", 4)
-    //     .style("fill", d => globalColorScale(d.time_s))
-    //     .style("opacity", 0)
-    // .transition()
-    //     .delay((d,i) => i)
-    //     .duration(200)
-    //     .style("opacity", 1);  
+//     // g.selectAll(".point")
+//     // .data(data)
+//     // .enter().append("circle")
+//     //     .attr("class", "point")
+//     //     .attr("cx", d => xScale(d[`${x}_mm`]))
+//     //     .attr("cy", d => yScale(d[`${y}_mm`]))
+//     //     .attr("r", 4)
+//     //     .style("fill", d => globalColorScale(d.time_s))
+//     //     .style("opacity", 0)
+//     // .transition()
+//     //     .delay((d,i) => i)
+//     //     .duration(200)
+//     //     .style("opacity", 1);  
     
-    // TOOLTIP
-    g.selectAll(".hover-target")
-      .data(data)
-      .enter().append("circle")
-        .attr("class", "hover-target")
-        .attr("cx", d => xScale(d[`${x}_mm`]))
-        .attr("cy", d => yScale(d[`${y}_mm`]))
-        .attr("r", 8)                 // slightly larger than your visible point
-        .attr("fill", "transparent")  // invisible “hit” area
-        .on("mouseover", (event, d) => {
-          tooltip
-            .style("left",  `${event.pageX + 10}px`)
-            .style("top",   `${event.pageY - 25}px`)
-            .style("display", "block")
-            .html(`
-              <strong>${x.toUpperCase()}:</strong> ${d[`${x}_mm`].toFixed(1)}<br/>
-              <strong>${y.toUpperCase()}:</strong> ${d[`${y}_mm`].toFixed(1)}<br/>
-              <strong>time (seconds):</strong> ${d.time_s.toFixed(2)}
-            `);
-        })
-        .on("mousemove", (event) => {
-          // move tooltip with mouse
-          tooltip
-            .style("left",  `${event.pageX + 10}px`)
-            .style("top",   `${event.pageY - 25}px`);
-        })
-        .on("mouseout", () => {
-          tooltip.style("display", "none");
-        });
-};
+//     // TOOLTIP
+//     g.selectAll(".hover-target")
+//       .data(data)
+//       .enter().append("circle")
+//         .attr("class", "hover-target")
+//         .attr("cx", d => xScale(d[`${x}_mm`]))
+//         .attr("cy", d => yScale(d[`${y}_mm`]))
+//         .attr("r", 8)                 // slightly larger than your visible point
+//         .attr("fill", "transparent")  // invisible “hit” area
+//         .on("mouseover", (event, d) => {
+//           tooltip
+//             .style("left",  `${event.pageX + 10}px`)
+//             .style("top",   `${event.pageY - 25}px`)
+//             .style("display", "block")
+//             .html(`
+//               <strong>${x.toUpperCase()}:</strong> ${d[`${x}_mm`].toFixed(1)}<br/>
+//               <strong>${y.toUpperCase()}:</strong> ${d[`${y}_mm`].toFixed(1)}<br/>
+//               <strong>time (seconds):</strong> ${d.time_s.toFixed(2)}
+//             `);
+//         })
+//         .on("mousemove", (event) => {
+//           // move tooltip with mouse
+//           tooltip
+//             .style("left",  `${event.pageX + 10}px`)
+//             .style("top",   `${event.pageY - 25}px`);
+//         })
+//         .on("mouseout", () => {
+//           tooltip.style("display", "none");
+//         });
+// };
 
-// FUNCTION render axes graphs
-function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
-    ["xy-top","yz-side","xz-front"].forEach(id =>
-        d3.select(`#${id}`).selectAll("svg").remove()
-      ); // Clear existing axes graphs
-    const filteredData = getObjectsByValue(groups[selectedGroup], selectedGroup, selectedMarker, selectedGenre);
-    console.log(filteredData);
+// // FUNCTION render axes graphs
+// function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
+//     ["xy-top","yz-side","xz-front"].forEach(id =>
+//         d3.select(`#${id}`).selectAll("svg").remove()
+//       ); // Clear existing axes graphs
+//     const filteredData = getObjectsByValue(groups[selectedGroup], selectedGroup, selectedMarker, selectedGenre);
+//     console.log(filteredData);
 
-    if (!filteredData || filteredData.length === 0) {
-        console.warn("No data found.");
-        return;
-    };
+//     if (!filteredData || filteredData.length === 0) {
+//         console.warn("No data found.");
+//         return;
+//     };
 
-    const ids = ["xy-top", "yz-side", "xz-front"];
+//     const ids = ["xy-top", "yz-side", "xz-front"];
 
-    ids.forEach((id) => {
-        renderGraph(filteredData, id, id[0], id[1]);
-        console.log('rendered one')
-    });
+//     ids.forEach((id) => {
+//         renderGraph(filteredData, id, id[0], id[1]);
+//         console.log('rendered one')
+//     });
 
-    console.log("done rendering");
-    renderDispGraph(filteredData);
-    animateAxesPlots();
-    animateDispGraph();
-};
+//     console.log("done rendering");
+//     renderDispGraph(filteredData);
+//     animateAxesPlots();
+//     animateDispGraph();
+// };
 
-// FUNCTION update graphs for filters
-function updateAxesGraph() {
-  let selectedGroup  = d3.select("#group-filter").property("value");
-  let selectedMarker = d3.select("#marker-filter").property("value");
-  let selectedGenre  = d3.select("#genre-filter").property("value");
+// // FUNCTION update graphs for filters
+// function updateAxesGraph() {
+//   let selectedGroup  = d3.select("#group-filter").property("value");
+//   let selectedMarker = d3.select("#marker-filter").property("value");
+//   let selectedGenre  = d3.select("#genre-filter").property("value");
  
  
-  // initial draw:
-  renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+//   // initial draw:
+//   renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
  
  
-  // Whenever group changes:
-  d3.select("#group-filter").on("change", function () {
-    selectedGroup = d3.select(this).property("value");
-    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-    // ALSO re‐draw the “Disp” charts (if that’s what you want):
-    updateAllCharts();
-  });
+//   // Whenever group changes:
+//   d3.select("#group-filter").on("change", function () {
+//     selectedGroup = d3.select(this).property("value");
+//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+//     // ALSO re‐draw the “Disp” charts (if that’s what you want):
+//     updateAllCharts();
+//   });
  
  
-  // Whenever genre changes:
-  d3.select("#genre-filter").on("change", function () {
-    selectedGenre = d3.select(this).property("value");
-    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-    // ALSO re‐draw the “Disp” charts:
-    updateAllCharts();
-  });
+//   // Whenever genre changes:
+//   d3.select("#genre-filter").on("change", function () {
+//     selectedGenre = d3.select(this).property("value");
+//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+//     // ALSO re‐draw the “Disp” charts:
+//     updateAllCharts();
+//   });
  
  
-  // Whenever marker changes:
-  d3.select("#marker-filter").on("change", function () {
-    selectedMarker = d3.select(this).property("value");
-    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-    // ALSO re‐draw the “Disp” charts:
-    updateAllCharts();
-  });
- }
+//   // Whenever marker changes:
+//   d3.select("#marker-filter").on("change", function () {
+//     selectedMarker = d3.select(this).property("value");
+//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+//     // ALSO re‐draw the “Disp” charts:
+//     updateAllCharts();
+//   });
+//  }
  
 
 // updateAxesGraph();
@@ -359,6 +365,7 @@ function renderDispGraph(data) {
     .attr("x", w / 2)
     .attr("y", h + 30)
     .attr("text-anchor", "middle")
+    .attr("font-size", "10px")
     .text('Time (sec)');
 
   g.append("text")
@@ -367,6 +374,7 @@ function renderDispGraph(data) {
       .attr("y", -25)
       .attr("transform", "rotate(-90)")
       .attr("text-anchor", "middle")
+      .attr("font-size", "10px")
       .text('Displacement (mm)');
 
   // line generator
@@ -382,11 +390,10 @@ function renderDispGraph(data) {
     .attr('d', line);
 
   const len = dispPath.node().getTotalLength();
-  const time = (dispData.length - 1) + 999;
   dispPath
     .attr('stroke-dasharray', `${len} ${len}`)
     .attr('stroke-dashoffset', len)
-    .transition().duration(time).ease(d3.easeLinear)
+    .transition().duration(900).ease(d3.easeLinear)
     .attr('stroke-dashoffset', 0);
 
   // tooltip hit‐areas
@@ -563,11 +570,6 @@ scroller
     } else {
         d3.select('#intro-graph').style('display', 'none');
         d3.select('#head').style('display', 'block');
-    }
-  })
-  .onStepExit(({index}) => {
-    if (index === steps - 1) {
-      updateAxesGraph();
     }
   });
 
@@ -853,3 +855,42 @@ window.addEventListener('scroll', () => {
 //  // 1) Initial draw on page‐load so defaults show immediately
 //  // 2) Then re‐draw whenever group‐filter or marker‐filter changes
 //  updateAllCharts();
+
+/**
+ * Given an array of rows [{time_s, x_mm, y_mm, z_mm}, …] for a single block,
+ * compute the average frame‐to‐frame displacement in mm/s.
+ */
+
+function averageDisplacement(data) {
+    // 1) Build an array of instantaneous mm/frame displacements:
+    const instDisps = data.map((d, i, arr) => {
+      if (i === 0) return 0;    
+      const prev = arr[i - 1];
+      const dx = d.x_mm - prev.x_mm;
+      const dy = d.y_mm - prev.y_mm;
+      const dz = d.z_mm - prev.z_mm;
+      return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    });
+  
+    // 2) Drop the first zero (frame 0) and compute the mean (mm/frame):
+    const meanMmPerFrame = d3.mean(instDisps.slice(1));
+  
+    // 3) Convert to mm/s by multiplying by the frame rate (100 Hz → 100 frames/sec):
+    const meanMmPerSecond = meanMmPerFrame * 100;
+  
+    return {
+      mmPerFrame:   meanMmPerFrame,
+      mmPerSecond:  meanMmPerSecond
+    };
+  }
+
+  const participantData = NM0004Data.filter(d =>
+    d.group  === 'NM0004' &&
+    d.marker === 'S5'     &&
+    d.genre  === 'edm'
+  ).sort((a, b) => d3.ascending(a.time_s, b.time_s));
+  
+  const avgDisp = averageDisplacement(participantData);
+  console.log("Mean displacement (mm/frame):", avgDisp.mmPerFrame.toFixed(4));
+  console.log("Mean QoM (mm/s):",         avgDisp.mmPerSecond.toFixed(4));
+  
