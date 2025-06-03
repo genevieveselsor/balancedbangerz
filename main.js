@@ -70,7 +70,7 @@ function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
     d.marker === selectedMarker &&
     d.genre  === selectedGenre
   );
- }
+};
  
 
 ///////////////////////////////////////////////////////
@@ -104,10 +104,6 @@ function renderGraph(data, axes, x, y) {
     const yScale = d3.scaleLinear()
         .domain(d3.extent(data, d => d[`${y}_mm`]))
         .range([innerHeight, 0]);
-    
-    // const timeExtent = d3.extent(data, d => d.time_s);
-    // const colorScale = d3.scaleSequential(d3.interpolateTurbo)
-    //                    .domain(timeExtent);
 
     g.append("g")
         .attr("class", "x-axis")
@@ -152,8 +148,9 @@ function renderGraph(data, axes, x, y) {
     // .transition()
     //     .delay((d,i) => i)
     //     .duration(200)
-    //     .style("opacity", 1);                        
+    //     .style("opacity", 1);  
     
+    // TOOLTIP
     g.selectAll(".hover-target")
       .data(data)
       .enter().append("circle")
@@ -189,7 +186,7 @@ function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) {
     ["xy-top","yz-side","xz-front"].forEach(id =>
         d3.select(`#${id}`).selectAll("svg").remove()
       ); // Clear existing axes graphs
-    const filteredData = getObjectsByValue(groups[selectedGroup], selectedMarker, selectedGenre);
+    const filteredData = getObjectsByValue(groups[selectedGroup], selectedGroup, selectedMarker, selectedGenre);
     console.log(filteredData);
 
     if (!filteredData || filteredData.length === 0) {
