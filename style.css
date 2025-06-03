@@ -100,6 +100,12 @@ top-right-button {
   justify-content: center;
 }
 
+#intro-graph {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
 .top-right-button {
   position: fixed;
   top: 1rem;
@@ -156,7 +162,6 @@ top-right-button {
   opacity: 0;
   pointer-events: none;
 }
-
 
 
 /*── When visible, center it and enlarge it ─────────────────────────────────────────*/

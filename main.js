@@ -1,39 +1,37 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 import scrollama from 'https://cdn.jsdelivr.net/npm/scrollama@3.2.0/+esm';
 
-// // FUNCTION import CSV file
-// async function loadData(filename) {
-//     try {
-//         const rawData = await d3.csv(`./data/${filename}.csv`);
-//         const data = rawData.map(d => ({
-//             group: d.group,
-//             marker: d.marker,
-//             block: d.block,
-//             genre: d.genre,
-//             time_s: +d.time_s,
-//             x_mm: +d.x_mm,
-//             y_mm: +d.y_mm,
-//             z_mm: +d.z_mm,
-//         }));
-//         return data;
-//     } catch (error) {
-//         console.error("Error loading the CSV file:", error);
-//     }
-// };
+// FUNCTION import CSV file
+async function loadData(filename) {
+    try {
+        const rawData = await d3.csv(`./data/${filename}.csv`);
+        const data = rawData.map(d => ({
+            group: d.group,
+            marker: d.marker,
+            block: d.block,
+            genre: d.genre,
+            time_s: +d.time_s,
+            x_mm: +d.x_mm,
+            y_mm: +d.y_mm,
+            z_mm: +d.z_mm,
+        }));
+        return data;
+    } catch (error) {
+        console.error("Error loading the CSV file:", error);
+    }
+};
 
-// // import data
-// const NM0001Data = await loadData('NM0001-cleaned');
-// const NM0004Data = await loadData('NM0004-cleaned');
-// const NM0011Data = await loadData('NM0011-cleaned');
-// // NOTE: data keys are following
-// // ,group,marker,block,time_s,genre,x_mm,y_mm,z_mm
+// import data
+const NM0004Data = await loadData('NM0004-cleaned');
+// NOTE: data keys are following
+// ,group,marker,block,time_s,genre,x_mm,y_mm,z_mm
 
-// ///////////////////////////////////////////////////////
-// // SANDBOX
-// // console.log('z-maxs')
-// // console.log(d3.max(NM0001Data, d => d.z_mm))
-// // console.log(d3.max(NM0004Data, d => d.z_mm))
-// // console.log(d3.max(NM0011Data, d => d.z_mm))
+///////////////////////////////////////////////////////
+// SANDBOX
+// console.log('z-maxs')
+// console.log(d3.max(NM0001Data, d => d.z_mm))
+// console.log(d3.max(NM0004Data, d => d.z_mm))
+// console.log(d3.max(NM0011Data, d => d.z_mm))
 
 // function disp(data){
 //   const dispData = data.map((d, i, arr) => {
@@ -48,36 +46,29 @@ import scrollama from 'https://cdn.jsdelivr.net/npm/scrollama@3.2.0/+esm';
 //   return dispData
 // };
 
-// console.log(d3.max(disp(NM0004Data), d => d.disp));
+///////////////////////////////////////////////////////
 
-// ///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 
-// ///////////////////////////////////////////////////////
+// GLOBAL VARIABLES
 
-// // GLOBAL VARIABLES
-// let groups = {
-//     "NM0001": NM0001Data,
-//     "NM0004": NM0004Data,
-//     "NM0011": NM0011Data,
-// };
+// flatten all groups into one array
+const allData = [...NM0004Data];
 
-// // flatten all groups into one array
-// const allData = [...NM0001Data, ...NM0004Data, ...NM0011Data];
+// global time range across every sample
+const globalTimeExtent = d3.extent(allData, d => d.time_s);
 
-// // global time range across every sample
-// const globalTimeExtent = d3.extent(allData, d => d.time_s);
+// one single color scale for every chart
+const globalColorScale = d3.scaleSequential(d3.interpolateTurbo)
+                           .domain(globalTimeExtent);
 
-// // one single color scale for every chart
-// const globalColorScale = d3.scaleSequential(d3.interpolateTurbo)
-//                            .domain(globalTimeExtent);
+// for animation
+let dispPath, dispLength, dispDataGlobal;
+let axesPoints = [];
 
-// // for animation
-// let dispPath, dispLength, dispDataGlobal;
-// let axesPoints = [];
+///////////////////////////////////////////////////////
 
-// ///////////////////////////////////////////////////////
-
-// // FUNCTION filter data by marker and genre
+// FUNCTION filter data by marker and genre
 // function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
 //   if (selectedGenre === "silence") {
 //     return data.filter(d =>
@@ -88,373 +79,361 @@ import scrollama from 'https://cdn.jsdelivr.net/npm/scrollama@3.2.0/+esm';
 //     );
 //   }
  
- 
 //   return data.filter(d =>
 //     d.group  === selectedGroup &&
 //     d.marker === selectedMarker &&
 //     d.genre  === selectedGenre
 //   );
 // };
- 
 
-// ///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 
-// // FUNCTION HELPER to render one axis graph
-// function renderGraph(data, axes, x, y) {
+// FUNCTION HELPER to render one axis graph
+function renderGraph(data, axes, x, y) {
 
-//     const aspectWidth = 500;
-//     const aspectHeight = 500;
+    const aspectWidth = 500;
+    const aspectHeight = 500;
 
-//     // Update responsive SVG
-//     const svg = d3.select(`#${axes}`)
-//         .append("svg")
-//         .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
-//         .attr("preserveAspectRatio", "xMidYMid meet")
-//         .style("width", "100%")   // responsive width
-//         .style("height", "auto"); // maintain aspect ratio
+    // Update responsive SVG
+    const svg = d3.select(`#${axes}`)
+        .append("svg")
+        .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
+        .attr("preserveAspectRatio", "xMidYMid meet")
+        .style("width", "100%")   // responsive width
+        .style("height", "auto"); // maintain aspect ratio
 
-//     const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-//     const innerWidth = aspectWidth - margin.left - margin.right;
-//     const innerHeight = aspectHeight - margin.top - margin.bottom;
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const innerWidth = aspectWidth - margin.left - margin.right;
+    const innerHeight = aspectHeight - margin.top - margin.bottom;
 
-//     const g = svg.append("g")
-//         .attr("transform", `translate(${margin.left},${margin.top})`);
+    const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-//     // Scales based on fixed internal coordinate system
-//     const xScale = d3.scaleLinear()
-//         .domain([-50, 60])
-//         .range([0, innerWidth]);
+    // Scales based on fixed internal coordinate system
+    const xScale = d3.scaleLinear()
+        .domain([-50, 60])
+        .range([0, innerWidth]);
 
-//     const yScale = d3.scaleLinear()
-//         .domain([-50, 60])
-//         .range([innerHeight, 0]);
+    const yScale = d3.scaleLinear()
+        .domain([-50, 60])
+        .range([innerHeight, 0]);
 
-//     g.append("g")
-//         .attr("class", "x-axis")
-//         .attr("transform", `translate(0,${innerHeight})`)
-//         .call(d3.axisBottom(xScale));
+    g.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(xScale));
 
-//     g.append("g")
-//         .attr("class", "y-axis")
-//         .call(d3.axisLeft(yScale));
+    g.append("g")
+        .attr("class", "y-axis")
+        .call(d3.axisLeft(yScale));
 
-//     g.append("text")
-//         .attr("class", "x-label")
-//         .attr("x", innerWidth / 2)
-//         .attr("y", innerHeight + 30)
-//         .attr("text-anchor", "middle")
-//         .text(`${x}_mm`);
+    g.append("text")
+        .attr("class", "x-label")
+        .attr("x", innerWidth / 2)
+        .attr("y", innerHeight + 30)
+        .attr("text-anchor", "middle")
+        .text(`${x}_mm`);
 
-//     g.append("text")
-//         .attr("class", "y-label")
-//         .attr("x", -innerHeight / 2)
-//         .attr("y", -25)
-//         .attr("transform", "rotate(-90)")
-//         .attr("text-anchor", "middle")
-//         .text(`${y}_mm`);
+    g.append("text")
+        .attr("class", "y-label")
+        .attr("x", -innerHeight / 2)
+        .attr("y", -25)
+        .attr("transform", "rotate(-90)")
+        .attr("text-anchor", "middle")
+        .text(`${y}_mm`);
 
-//     // g.selectAll(".point")
-//     //     .data(data)
-//     //     .enter()
-//     //     .append("circle")
-//     //     .attr("class", "point")
-//     //     .attr("cx", d => xScale(d[`${x}_mm`]))
-//     //     .attr("cy", d => yScale(d[`${y}_mm`]))
-//     //     .attr("r", 3)
-//     //     .style("fill", "steelblue");
+    // g.selectAll(".point")
+    //     .data(data)
+    //     .enter()
+    //     .append("circle")
+    //     .attr("class", "point")
+    //     .attr("cx", d => xScale(d[`${x}_mm`]))
+    //     .attr("cy", d => yScale(d[`${y}_mm`]))
+    //     .attr("r", 3)
+    //     .style("fill", "steelblue");
 
-//     const pts = g.selectAll('circle.point')
-//     .data(data)
-//     .enter().append('circle')
-//       .attr('class','point')
-//       .attr('cx', d => xScale(d[`${x}_mm`]))
-//       .attr('cy', d => yScale(d[`${y}_mm`]))
-//       .attr('r', 4)
-//       .style('fill', d => globalColorScale(d.time_s))
-//       .style('opacity', 0);
+    const pts = g.selectAll('circle.point')
+    .data(data)
+    .enter().append('circle')
+      .attr('class','point')
+      .attr('cx', d => xScale(d[`${x}_mm`]))
+      .attr('cy', d => yScale(d[`${y}_mm`]))
+      .attr('r', 4)
+      .style('fill', d => globalColorScale(d.time_s))
+      .style('opacity', 0);
 
-//     axesPoints.push(pts);
+    axesPoints.push(pts);
     
-//     // g.selectAll(".point")
-//     // .data(data)
-//     // .enter().append("circle")
-//     //     .attr("class", "point")
-//     //     .attr("cx", d => xScale(d[`${x}_mm`]))
-//     //     .attr("cy", d => yScale(d[`${y}_mm`]))
-//     //     .attr("r", 4)
-//     //     .style("fill", d => globalColorScale(d.time_s))
-//     //     .style("opacity", 0)
-//     // .transition()
-//     //     .delay((d,i) => i)
-//     //     .duration(200)
-//     //     .style("opacity", 1);  
+    // g.selectAll(".point")
+    // .data(data)
+    // .enter().append("circle")
+    //     .attr("class", "point")
+    //     .attr("cx", d => xScale(d[`${x}_mm`]))
+    //     .attr("cy", d => yScale(d[`${y}_mm`]))
+    //     .attr("r", 4)
+    //     .style("fill", d => globalColorScale(d.time_s))
+    //     .style("opacity", 0)
+    // .transition()
+    //     .delay((d,i) => i)
+    //     .duration(200)
+    //     .style("opacity", 1);  
     
-//     // TOOLTIP
-//     g.selectAll(".hover-target")
-//       .data(data)
-//       .enter().append("circle")
-//         .attr("class", "hover-target")
-//         .attr("cx", d => xScale(d[`${x}_mm`]))
-//         .attr("cy", d => yScale(d[`${y}_mm`]))
-//         .attr("r", 8)                 // slightly larger than your visible point
-//         .attr("fill", "transparent")  // invisible “hit” area
-//         .on("mouseover", (event, d) => {
-//           tooltip
-//             .style("left",  `${event.pageX + 10}px`)
-//             .style("top",   `${event.pageY - 25}px`)
-//             .style("display", "block")
-//             .html(`
-//               <strong>${x.toUpperCase()}:</strong> ${d[`${x}_mm`].toFixed(1)}<br/>
-//               <strong>${y.toUpperCase()}:</strong> ${d[`${y}_mm`].toFixed(1)}<br/>
-//               <strong>time (seconds):</strong> ${d.time_s.toFixed(2)}
-//             `);
-//         })
-//         .on("mousemove", (event) => {
-//           // move tooltip with mouse
-//           tooltip
-//             .style("left",  `${event.pageX + 10}px`)
-//             .style("top",   `${event.pageY - 25}px`);
-//         })
-//         .on("mouseout", () => {
-//           tooltip.style("display", "none");
-//         });
-// };
+    // TOOLTIP
+    g.selectAll(".hover-target")
+      .data(data)
+      .enter().append("circle")
+        .attr("class", "hover-target")
+        .attr("cx", d => xScale(d[`${x}_mm`]))
+        .attr("cy", d => yScale(d[`${y}_mm`]))
+        .attr("r", 8)                 // slightly larger than your visible point
+        .attr("fill", "transparent")  // invisible “hit” area
+        .on("mouseover", (event, d) => {
+          tooltip
+            .style("left",  `${event.pageX + 10}px`)
+            .style("top",   `${event.pageY - 25}px`)
+            .style("display", "block")
+            .html(`
+              <strong>${x.toUpperCase()}:</strong> ${d[`${x}_mm`].toFixed(1)}<br/>
+              <strong>${y.toUpperCase()}:</strong> ${d[`${y}_mm`].toFixed(1)}<br/>
+              <strong>time (seconds):</strong> ${d.time_s.toFixed(2)}
+            `);
+        })
+        .on("mousemove", (event) => {
+          // move tooltip with mouse
+          tooltip
+            .style("left",  `${event.pageX + 10}px`)
+            .style("top",   `${event.pageY - 25}px`);
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
+        });
+};
 
-// // FUNCTION render axes graphs
-// function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
-//     ["xy-top","yz-side","xz-front"].forEach(id =>
-//         d3.select(`#${id}`).selectAll("svg").remove()
-//       ); // Clear existing axes graphs
-//     const filteredData = getObjectsByValue(groups[selectedGroup], selectedGroup, selectedMarker, selectedGenre);
-//     console.log(filteredData);
+// FUNCTION render axes graphs
+function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
+    ["xy-top","yz-side","xz-front"].forEach(id =>
+        d3.select(`#${id}`).selectAll("svg").remove()
+      ); // Clear existing axes graphs
+    const filteredData = getObjectsByValue(groups[selectedGroup], selectedGroup, selectedMarker, selectedGenre);
+    console.log(filteredData);
 
-//     if (!filteredData || filteredData.length === 0) {
-//         console.warn("No data found.");
-//         return;
-//     };
+    if (!filteredData || filteredData.length === 0) {
+        console.warn("No data found.");
+        return;
+    };
 
-//     const ids = ["xy-top", "yz-side", "xz-front"];
+    const ids = ["xy-top", "yz-side", "xz-front"];
 
-//     ids.forEach((id) => {
-//         renderGraph(filteredData, id, id[0], id[1]);
-//         console.log('rendered one')
-//     });
+    ids.forEach((id) => {
+        renderGraph(filteredData, id, id[0], id[1]);
+        console.log('rendered one')
+    });
 
-//     console.log("done rendering");
-//     renderDispGraph(filteredData);
-//     animateAxesPlots();
-//     animateDispGraph();
-// };
+    console.log("done rendering");
+    renderDispGraph(filteredData);
+    animateAxesPlots();
+    animateDispGraph();
+};
 
-// // FUNCTION update graphs for filters
-// function updateAxesGraph() {
-//   let selectedGroup  = d3.select("#group-filter").property("value");
-//   let selectedMarker = d3.select("#marker-filter").property("value");
-//   let selectedGenre  = d3.select("#genre-filter").property("value");
+// FUNCTION update graphs for filters
+function updateAxesGraph() {
+  let selectedGroup  = d3.select("#group-filter").property("value");
+  let selectedMarker = d3.select("#marker-filter").property("value");
+  let selectedGenre  = d3.select("#genre-filter").property("value");
  
  
-//   // initial draw:
-//   renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+  // initial draw:
+  renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
  
  
-//   // Whenever group changes:
-//   d3.select("#group-filter").on("change", function () {
-//     selectedGroup = d3.select(this).property("value");
-//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-//     // ALSO re‐draw the “Disp” charts (if that’s what you want):
-//     updateAllCharts();
-//   });
+  // Whenever group changes:
+  d3.select("#group-filter").on("change", function () {
+    selectedGroup = d3.select(this).property("value");
+    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+    // ALSO re‐draw the “Disp” charts (if that’s what you want):
+    updateAllCharts();
+  });
  
  
-//   // Whenever genre changes:
-//   d3.select("#genre-filter").on("change", function () {
-//     selectedGenre = d3.select(this).property("value");
-//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-//     // ALSO re‐draw the “Disp” charts:
-//     updateAllCharts();
-//   });
+  // Whenever genre changes:
+  d3.select("#genre-filter").on("change", function () {
+    selectedGenre = d3.select(this).property("value");
+    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+    // ALSO re‐draw the “Disp” charts:
+    updateAllCharts();
+  });
  
  
-//   // Whenever marker changes:
-//   d3.select("#marker-filter").on("change", function () {
-//     selectedMarker = d3.select(this).property("value");
-//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-//     // ALSO re‐draw the “Disp” charts:
-//     updateAllCharts();
-//   });
-//  }
+  // Whenever marker changes:
+  d3.select("#marker-filter").on("change", function () {
+    selectedMarker = d3.select(this).property("value");
+    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
+    // ALSO re‐draw the “Disp” charts:
+    updateAllCharts();
+  });
+ }
  
 
-// // updateAxesGraph();
+// updateAxesGraph();
 
-// const tooltip = d3.select("body").append("div")
-//   .attr("class", "d3-tooltip")
-//   .style("position", "absolute")
-//   .style("pointer-events", "none")
-//   .style("padding", "4px 8px")
-//   .style("background", "rgba(255,255,255,0.9)")
-//   .style("border", "1px solid #ccc")
-//   .style("border-radius", "4px")
-//   .style("font-size", "12px")
-//   .style("display", "none");
+const tooltip = d3.select("body").append("div")
+  .attr("class", "d3-tooltip")
+  .style("position", "absolute")
+  .style("pointer-events", "none")
+  .style("padding", "4px 8px")
+  .style("background", "rgba(255,255,255,0.9)")
+  .style("border", "1px solid #ccc")
+  .style("border-radius", "4px")
+  .style("font-size", "12px")
+  .style("display", "none");
+
+///////////////////////////////////////////////////////
+
+// FUNCTION render displacement graph
+function renderDispGraph(data) {
+  // dimensions & margins
+  const width = 500;
+  const height = 300;
+  const margin = { top: 40, right: 20, bottom: 40, left: 55 };
+  const w = width - margin.left - margin.right;
+  const h = height - margin.top - margin.bottom;
+
+  // clear any old svg in the container
+  const container = d3.select('#intro-graph');
+  container.selectAll('svg').remove();
+
+  // append a fresh <svg>
+  const svg = container.append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '100%')
+    .style('height', 'auto');
+
+  // define gradient stops as before
+  svg.select('defs').remove();
+  const defs = svg.append('defs');
+  const grad = defs.append('linearGradient')
+    .attr('id', 'global-disp-gradient')
+    .attr('gradientUnits', 'userSpaceOnUse')
+    .attr('x1', margin.left)
+    .attr('y1', 0)
+    .attr('x2', margin.left + w)
+    .attr('y2', 0);
+
+  const stops = 20;
+  for (let i = 0; i <= stops; i++) {
+    const t = i / stops;
+    const time = globalTimeExtent[0] + t * (globalTimeExtent[1] - globalTimeExtent[0]);
+    grad.append('stop')
+      .attr('offset', `${t * 100}%`)
+      .attr('stop-color', globalColorScale(time));
+  }
+
+  // compute displacement data
+  const dispData = data.map((d, i) => {
+    if (i === 0) return { time_s: d.time_s, disp: 0 };
+    return { time_s: d.time_s, disp: Math.sqrt(d.x_mm**2 + d.y_mm**2 + d.z_mm**2) };
+  });
+
+  // scales
+  const xScale = d3.scaleLinear()
+    .domain(globalTimeExtent)
+    .range([0, w]);
+  const yScale = d3.scaleLinear()
+    .domain([0, 55])
+    .range([h, 0]);
+
+  // drawing group
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // axes
+  g.append('g')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(xScale).ticks(12));
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5));
+
+  g.append("text")
+    .attr("class", "x-label")
+    .attr("x", w / 2)
+    .attr("y", h + 30)
+    .attr("text-anchor", "middle")
+    .text('Time (sec)');
+
+  g.append("text")
+      .attr("class", "y-label")
+      .attr("x", -h / 2)
+      .attr("y", -25)
+      .attr("transform", "rotate(-90)")
+      .attr("text-anchor", "middle")
+      .text('Displacement (mm)');
+
+  // line generator
+  const line = d3.line()
+    .x(d => xScale(d.time_s))
+    .y(d => yScale(d.disp));
+
+  dispPath = g.append('path')
+    .datum(dispData)
+    .attr('fill','none')
+    .attr('stroke','url(#global-disp-gradient)')
+    .attr('stroke-width',3)
+    .attr('d', line);
+
+  const len = dispPath.node().getTotalLength();
+  const time = (dispData.length - 1) + 999;
+  dispPath
+    .attr('stroke-dasharray', `${len} ${len}`)
+    .attr('stroke-dashoffset', len)
+    .transition().duration(time).ease(d3.easeLinear)
+    .attr('stroke-dashoffset', 0);
+
+  // tooltip hit‐areas
+  g.selectAll('.disp-hover')
+    .data(dispData)
+    .enter().append('circle')
+      .attr('class','disp-hover')
+      .attr('cx', d => xScale(d.time_s))
+      .attr('cy', d => yScale(d.disp))
+      .attr('r', 8)
+      .attr('fill','transparent')
+      .on('mouseover', (event, d) => {
+        tooltip
+          .style('display','block')
+          .html(`
+            <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
+            <strong>disp:</strong> ${d.disp.toFixed(3)} mm
+          `);
+      })
+      .on('mousemove', event => {
+        tooltip
+          .style('left',  `${event.pageX+10}px`)
+          .style('top',   `${event.pageY-25}px`);
+      })
+      .on('mouseout', () => tooltip.style('display','none'));
+};
 
 // ///////////////////////////////////////////////////////
 
-// // FUNCTION render displacement graph
-// function renderDispGraph(data) {
-//   // dimensions & margins
-//   const width  = 900;
-//   const height = 300;
-//   const margin = { top: 40, right: 20, bottom: 40, left: 55 };
-//   const w = width - margin.left - margin.right;
-//   const h = height - margin.top - margin.bottom;
+// FUNCTION animate plots
+function animateAxesPlots() {
+  axesPoints.forEach(pts => {
+    pts.transition()
+      .delay((d, i) => i)
+      .duration(400)
+      .attr('r', 4)
+      .style('opacity', 1);
+  });
+}
 
-//   // clear any old svg in the container
-//   const container = d3.select('#disp-chart');
-//   container.selectAll('svg').remove();
-
-//   // append a fresh <svg>
-//   const svg = container.append('svg')
-//     .attr('viewBox', `0 0 ${width} ${height}`)
-//     .attr('preserveAspectRatio', 'xMidYMid meet')
-//     .style('width', '100%')
-//     .style('height', 'auto');
-
-//   // define gradient stops as before
-//   svg.select('defs').remove();
-//   const defs = svg.append('defs');
-//   const grad = defs.append('linearGradient')
-//     .attr('id', 'global-disp-gradient')
-//     .attr('gradientUnits', 'userSpaceOnUse')
-//     .attr('x1', margin.left)
-//     .attr('y1', 0)
-//     .attr('x2', margin.left + w)
-//     .attr('y2', 0);
-
-//   const stops = 20;
-//   for (let i = 0; i <= stops; i++) {
-//     const t = i / stops;
-//     const time = globalTimeExtent[0] + t * (globalTimeExtent[1] - globalTimeExtent[0]);
-//     grad.append('stop')
-//       .attr('offset', `${t * 100}%`)
-//       .attr('stop-color', globalColorScale(time));
-//   }
-
-//   // compute displacement data
-//   const dispData = data.map((d, i, arr) => {
-//     if (i === 0) return { time_s: d.time_s, disp: 0 };
-//     // const initial = arr[0];
-//     // const dx = d.x_mm - p.x_mm,
-//     //       dy = d.y_mm - p.y_mm,
-//     //       dz = d.z_mm - p.z_mm;
-//     return { time_s: d.time_s, disp: Math.sqrt(d.x_mm**2 + d.y_mm**2 + d.z_mm**2) };
-//   });
-
-//   // scales
-//   const xScale = d3.scaleLinear()
-//     .domain(globalTimeExtent)
-//     .range([0, w]);
-//   const yScale = d3.scaleLinear()
-//     .domain([0, 55])
-//     .range([h, 0]);
-
-//   // drawing group
-//   const g = svg.append('g')
-//     .attr('transform', `translate(${margin.left},${margin.top})`);
-
-//   // axes
-//   g.append('g')
-//     .attr('transform', `translate(0,${h})`)
-//     .call(d3.axisBottom(xScale).ticks(12));
-//   g.append('g')
-//     .call(d3.axisLeft(yScale).ticks(5));
-
-//   g.append("text")
-//     .attr("class", "x-label")
-//     .attr("x", w / 2)
-//     .attr("y", h + 30)
-//     .attr("text-anchor", "middle")
-//     .text('Time (sec)');
-
-//   g.append("text")
-//       .attr("class", "y-label")
-//       .attr("x", -h / 2)
-//       .attr("y", -25)
-//       .attr("transform", "rotate(-90)")
-//       .attr("text-anchor", "middle")
-//       .text('Displacement (mm)');
-
-//   // line generator
-//   const line = d3.line()
-//     .x(d => xScale(d.time_s))
-//     .y(d => yScale(d.disp));
-
-//   dispDataGlobal = dispData;
-//   dispPath = g.append('path')
-//     .datum(dispDataGlobal)
-//     .attr('fill','none')
-//     .attr('stroke','url(#global-disp-gradient)')
-//     .attr('stroke-width',3)
-//     .attr('d', line);
-
-//   // const L = path.node().getTotalLength();
-//   // const T = (dispData.length - 1) + 200;
-//   // path
-//   //   .attr('stroke-dasharray', `${L} ${L}`)
-//   //   .attr('stroke-dashoffset', L)
-//   //   .transition().duration(T).ease(d3.easeLinear)
-//   //   .attr('stroke-dashoffset', 0);
-
-//   dispLength = dispPath.node().getTotalLength();
-//   dispPath
-//     .attr('stroke-dasharray', `${dispLength} ${dispLength}`)
-//     .attr('stroke-dashoffset', dispLength);
-
-//   // tooltip hit‐areas
-//   g.selectAll('.disp-hover')
-//     .data(dispData)
-//     .enter().append('circle')
-//       .attr('class','disp-hover')
-//       .attr('cx', d => xScale(d.time_s))
-//       .attr('cy', d => yScale(d.disp))
-//       .attr('r', 8)
-//       .attr('fill','transparent')
-//       .on('mouseover', (event, d) => {
-//         tooltip
-//           .style('display','block')
-//           .html(`
-//             <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
-//             <strong>disp:</strong> ${d.disp.toFixed(3)} mm
-//           `);
-//       })
-//       .on('mousemove', event => {
-//         tooltip
-//           .style('left',  `${event.pageX+10}px`)
-//           .style('top',   `${event.pageY-25}px`);
-//       })
-//       .on('mouseout', () => tooltip.style('display','none'));
-// };
-
-// ///////////////////////////////////////////////////////
-
-// // FUNCTION animate plots
-// function animateAxesPlots() {
-//   axesPoints.forEach(pts => {
-//     pts.transition()
-//       .delay((d, i) => i)
-//       .duration(400)
-//       .attr('r', 4)
-//       .style('opacity', 1);
-//   });
-// }
-
-// function animateDispGraph() {
-//   dispPath
-//     .transition()
-//     .duration((dispDataGlobal.length - 1) + 400)
-//     .ease(d3.easeLinear)
-//     .attr('stroke-dashoffset', 0);
-// }
+function animateDispGraph() {
+  dispPath
+    .transition()
+    .duration((dispDataGlobal.length - 1) + 400)
+    .ease(d3.easeLinear)
+    .attr('stroke-dashoffset', 0);
+}
 
 ///////////////////////////////////////////////////////
 
@@ -523,7 +502,6 @@ function renderHead() {
 renderHead();
 
 const svg = d3.select('#head svg');
-const svgNode = svg.node();
 const maxYaw = 10;
 const maxPitch = 8;
 const cx = 200;
@@ -564,15 +542,27 @@ scroller
     offset: 0.5,
   })
   .onStepEnter(({index}) => {
-    if(index === 1) {
+    if (index === 1) {
       window.removeEventListener('mousemove', handleMouse);
-      targetYaw=0;
-      targetPitch=0;
+      targetYaw = 0;
+      targetPitch = 0;
       projection.rotate([0,0]);
       spherePath.attr('d',path);
       eyes.attr('cx',d=>projection(d)[0]).attr('cy',d=>projection(d)[1]);
     } else {
       window.addEventListener('mousemove', handleMouse);
+    }
+
+    if (index === 3) {
+        d3.select('#head').style('display', 'none');
+        d3.select('#intro-graph').style('display', 'block').selectAll('*').remove();
+        const participantData = NM0004Data.filter(d =>
+            d.group === 'NM0004' && d.marker === 'S5' && d.genre === 'silence'
+        );
+        renderDispGraph(participantData);
+    } else {
+        d3.select('#intro-graph').style('display', 'none');
+        d3.select('#head').style('display', 'block');
     }
   })
   .onStepExit(({index}) => {
