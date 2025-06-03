@@ -156,3 +156,24 @@ top-right-button {
   opacity: 0;
   pointer-events: none;
 }
+
+
+
+/*── When visible, center it and enlarge it ─────────────────────────────────────────*/
+#next-button {
+  display: block;          /* override “display:none” */
+  margin: 40px auto;       /* horizontally center, with some vertical spacing */
+  padding: 12px 28px;      /* larger click‐area */
+  font-size: 1.25rem;      /* bigger text */
+  font-weight: bold;
+  background-color: #007acc; /* or whatever button color you like */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+/* Optional hover state */
+#next-button:hover {
+  background-color: #005fa3;
+}
