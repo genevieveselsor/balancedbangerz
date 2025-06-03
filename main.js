@@ -510,7 +510,7 @@ scroller
   })
   .onStepExit(({index}) => {
     if (index === steps - 1) {
-      updateAxesGraph(data);
+      updateAxesGraph();
     }
   });
 
