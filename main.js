@@ -35,6 +35,21 @@ const NM0011Data = await loadData('NM0011-cleaned');
 // console.log(d3.max(NM0004Data, d => d.z_mm))
 // console.log(d3.max(NM0011Data, d => d.z_mm))
 
+function disp(data){
+  const dispData = data.map((d, i, arr) => {
+    if (i === 0) return { time_s: d.time_s, disp: 0 };
+    const p = arr[i - 1];
+    const dx = d.x_mm - p.x_mm,
+          dy = d.y_mm - p.y_mm,
+          dz = d.z_mm - p.z_mm;
+    return { time_s: d.time_s, disp: Math.sqrt(dx*dx + dy*dy + dz*dz) };
+  });
+
+  return dispData
+};
+
+console.log(d3.max(disp(NM0004Data), d => d.disp));
+
 ///////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////
@@ -290,7 +305,7 @@ function renderDispGraph(data) {
   // dimensions & margins
   const width  = 900;
   const height = 300;
-  const margin = { top: 40, right: 20, bottom: 30, left: 60 };
+  const margin = { top: 40, right: 20, bottom: 40, left: 55 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
 
@@ -328,11 +343,11 @@ function renderDispGraph(data) {
   // compute displacement data
   const dispData = data.map((d, i, arr) => {
     if (i === 0) return { time_s: d.time_s, disp: 0 };
-    const p = arr[i - 1];
-    const dx = d.x_mm - p.x_mm,
-          dy = d.y_mm - p.y_mm,
-          dz = d.z_mm - p.z_mm;
-    return { time_s: d.time_s, disp: Math.sqrt(dx*dx + dy*dy + dz*dz) };
+    // const initial = arr[0];
+    // const dx = d.x_mm - p.x_mm,
+    //       dy = d.y_mm - p.y_mm,
+    //       dz = d.z_mm - p.z_mm;
+    return { time_s: d.time_s, disp: Math.sqrt(d.x_mm**2 + d.y_mm**2 + d.z_mm**2) };
   });
 
   // scales
@@ -340,7 +355,7 @@ function renderDispGraph(data) {
     .domain(globalTimeExtent)
     .range([0, w]);
   const yScale = d3.scaleLinear()
-    .domain([0, d3.max(dispData, d => d.disp)])
+    .domain([0, 55])
     .range([h, 0]);
 
   // drawing group
@@ -354,6 +369,21 @@ function renderDispGraph(data) {
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5));
 
+  g.append("text")
+    .attr("class", "x-label")
+    .attr("x", w / 2)
+    .attr("y", h + 30)
+    .attr("text-anchor", "middle")
+    .text('Time (sec)');
+
+  g.append("text")
+      .attr("class", "y-label")
+      .attr("x", -h / 2)
+      .attr("y", -25)
+      .attr("transform", "rotate(-90)")
+      .attr("text-anchor", "middle")
+      .text('Displacement (mm)');
+
   // line generator
   const line = d3.line()
     .x(d => xScale(d.time_s))
@@ -364,7 +394,7 @@ function renderDispGraph(data) {
     .datum(dispDataGlobal)
     .attr('fill','none')
     .attr('stroke','url(#global-disp-gradient)')
-    .attr('stroke-width',1.5)
+    .attr('stroke-width',3)
     .attr('d', line);
 
   // const L = path.node().getTotalLength();
