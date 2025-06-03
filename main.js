@@ -29,6 +29,15 @@ const NM0011Data = await loadData('NM0011-cleaned');
 // ,group,marker,block,time_s,genre,x_mm,y_mm,z_mm
 
 ///////////////////////////////////////////////////////
+// SANDBOX
+// console.log('z-maxs')
+// console.log(d3.max(NM0001Data, d => d.z_mm))
+// console.log(d3.max(NM0004Data, d => d.z_mm))
+// console.log(d3.max(NM0011Data, d => d.z_mm))
+
+///////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////
 
 // GLOBAL VARIABLES
 let groups = {
@@ -79,7 +88,7 @@ function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
 function renderGraph(data, axes, x, y) {
 
     const aspectWidth = 500;
-    const aspectHeight = 300;
+    const aspectHeight = 500;
 
     // Update responsive SVG
     const svg = d3.select(`#${axes}`)
@@ -89,7 +98,7 @@ function renderGraph(data, axes, x, y) {
         .style("width", "100%")   // responsive width
         .style("height", "auto"); // maintain aspect ratio
 
-    const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
     const innerWidth = aspectWidth - margin.left - margin.right;
     const innerHeight = aspectHeight - margin.top - margin.bottom;
 
@@ -98,11 +107,11 @@ function renderGraph(data, axes, x, y) {
 
     // Scales based on fixed internal coordinate system
     const xScale = d3.scaleLinear()
-        .domain(d3.extent(data, d => d[`${x}_mm`]))
+        .domain([-50, 60])
         .range([0, innerWidth]);
 
     const yScale = d3.scaleLinear()
-        .domain(d3.extent(data, d => d[`${y}_mm`]))
+        .domain([-50, 60])
         .range([innerHeight, 0]);
 
     g.append("g")
@@ -113,6 +122,21 @@ function renderGraph(data, axes, x, y) {
     g.append("g")
         .attr("class", "y-axis")
         .call(d3.axisLeft(yScale));
+
+    g.append("text")
+        .attr("class", "x-label")
+        .attr("x", innerWidth / 2)
+        .attr("y", innerHeight + 30)
+        .attr("text-anchor", "middle")
+        .text(`${x}_mm`);
+
+    g.append("text")
+        .attr("class", "y-label")
+        .attr("x", -innerHeight / 2)
+        .attr("y", -25)
+        .attr("transform", "rotate(-90)")
+        .attr("text-anchor", "middle")
+        .text(`${y}_mm`);
 
     // g.selectAll(".point")
     //     .data(data)
