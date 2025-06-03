@@ -30,27 +30,6 @@ const NM0011Data = await loadData('NM0011-cleaned');
 
 ///////////////////////////////////////////////////////
 // SANDBOX
-// console.log('z-maxs')
-// console.log(d3.max(NM0001Data, d => d.z_mm))
-// console.log(d3.max(NM0004Data, d => d.z_mm))
-// console.log(d3.max(NM0011Data, d => d.z_mm))
-
-function disp(data){
-  const dispData = data.map((d, i, arr) => {
-    if (i === 0) return { time_s: d.time_s, disp: 0 };
-    const p = arr[i - 1];
-    const dx = d.x_mm - p.x_mm,
-          dy = d.y_mm - p.y_mm,
-          dz = d.z_mm - p.z_mm;
-    return { time_s: d.time_s, disp: Math.sqrt(dx*dx + dy*dy + dz*dz) };
-  });
-
-  return dispData
-};
-
-console.log(d3.max(disp(NM0004Data), d => d.disp));
-
-///////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////
 
@@ -61,6 +40,13 @@ let groups = {
     "NM0011": NM0011Data,
 };
 
+let genreToColor = {
+  'silence': d3.interpolateBlues,
+  'salsa': d3.interpolateOranges,
+  'meditation': d3.interpolateGreens,
+  'edm': d3.interpolateReds,
+};
+
 // flatten all groups into one array
 const allData = [...NM0001Data, ...NM0004Data, ...NM0011Data];
 
@@ -68,7 +54,7 @@ const allData = [...NM0001Data, ...NM0004Data, ...NM0011Data];
 const globalTimeExtent = d3.extent(allData, d => d.time_s);
 
 // one single color scale for every chart
-const globalColorScale = d3.scaleSequential(d3.interpolateTurbo)
+let globalColorScale = d3.scaleSequential(genreToColor['silence'])
                            .domain(globalTimeExtent);
 
 // for animation
@@ -86,8 +72,10 @@ function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
       d.genre  === "silence" &&
       d.block  === "1"
     );
-  }
- 
+  };
+
+  globalColorScale = d3.scaleSequential(genreToColor[selectedGenre])
+                           .domain(globalTimeExtent);
  
   return data.filter(d =>
     d.group  === selectedGroup &&
