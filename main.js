@@ -544,7 +544,6 @@ function animateHeadTrajectory(headData) {
   // once axes are fully done, stop the interval and reset the head to center/scale
   setTimeout(() => {
     timer.stop();
-    return;
     // projection.translate(baseTranslate);
     // projection.scale(baseScale);
     // spherePath.attr('d', path);
@@ -552,6 +551,25 @@ function animateHeadTrajectory(headData) {
     // eyes
     //   .attr('cx', pt => projection(pt)[0])
     //   .attr('cy', pt => projection(pt)[1]);
+
+    // const lastPoint = headData[n - 1]
+    // const disp = Math.sqrt(
+    //   lastPoint.x_mm * lastPoint.x_mm +
+    //   lastPoint.y_mm * lastPoint.y_mm +
+    //   lastPoint.z_mm * lastPoint.z_mm
+    // )
+    // const dispFormatted = disp.toFixed(3)
+
+    // d3.select('#head svg')
+    //   .append('text')
+    //   .attr('id', 'final-displacement')
+    //   .attr('x', 10)
+    //   .attr('y', 390)
+    //   .attr('font-size', '14px')
+    //   .attr('fill', 'black')
+    //   .text(`Final displacement: ${dispFormatted} mm`);
+    
+    return;
   }, totalAxesTime);
 }
 
@@ -646,15 +664,21 @@ scroller
           .attr('cx', d => projection(d)[0])
           .attr('cy', d => projection(d)[1]);
     }
+  })
+  .onStepExit(({index}) => {
+
+    if (index === 6) {
+        projection.translate([200, 200]);
+        projection.scale(150);
+    } else if (index === 7) {
+        projection.rotate([0,0]);
+        spherePath.attr('d', path);
+        eyes
+          .attr('cx', d => projection(d)[0])
+          .attr('cy', d => projection(d)[1]);
+    }
+
   });
-//   .onStepExit(({index}) => {
-
-//     if (index === 4) {
-//         renderHead();
-//         window.addEventListener('mousemove', handleMouse);
-//     }
-
-//   });
 
 const title = document.getElementById('title');
 const startArrow = document.getElementById('start-arrow');
