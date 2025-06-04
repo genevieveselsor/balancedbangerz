@@ -667,11 +667,14 @@ scroller
   })
   .onStepExit(({index}) => {
 
-    if (index === 6) {
+    if (index === 5) {
+        projection.translate([200, 200]);
+        projection.scale(150);
+    } else if (index === 6) {
         projection.translate([200, 200]);
         projection.scale(150);
     } else if (index === 7) {
-        projection.rotate([0,0]);
+        projection.rotate([0, 0]);
         spherePath.attr('d', path);
         eyes
           .attr('cx', d => projection(d)[0])
