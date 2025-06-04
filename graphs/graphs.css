@@ -13,6 +13,7 @@ body {
   grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
   gap: 1rem; /* spacing between panels */
   align-items: start; /* align labels and svgs */
+  justify-content: space-between;
   padding: 1rem;
   max-width: 100%;
   box-sizing: border-box;
@@ -23,7 +24,8 @@ body {
   flex-direction: column;
   grid-template-rows: 10% 90%;
   align-items: center;
-  width: 100%;
+  justify-content: center;
+  width: 85%;
 }
 
 #axes-graphs label {
@@ -32,7 +34,7 @@ body {
   text-align: center;
 }
 
-#axes-graphs svg {
+#axes-graphs svg, #disp-chart svg{
   flex: 1;
   grid-row: 2;
   width: 100%;
@@ -41,6 +43,30 @@ body {
   /* background: #f9f9f9; */
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#disp-chart {
+  width: 100%;
+}
+
+#disp-graph-container {
+  display: flex;
+  flex-direction: column;
+  grid-template-rows: 10% 90%;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+#graph-head-wrapper {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 2/3 and 1/3 split */
+  gap: 1rem; /* optional space between chart and head */
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1rem;
 }
 
 top-right-button {
@@ -58,16 +84,6 @@ top-right-button {
 }
 .top-right-button button:hover {
   background: #e0e0e0;
-}
-
-#disp-graph-container label {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-#disp-chart {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 #scrolly {
@@ -163,7 +179,7 @@ align-items: flex-start;
 }
 
 #filters {
-  width: 250px;
+  width: 200px;
   position: sticky;
   top: 0;
   height: 100vh;
