@@ -713,3 +713,72 @@ function computeDisplacementByGenre(data) {
  // 1) Initial draw on page‐load so defaults show immediately
  // 2) Then re‐draw whenever group‐filter or marker‐filter changes
  updateAllCharts();
+
+
+
+
+ // GLOBAL HEAD VARIABLES
+ let projection, path, spherePath, graticulePath, eyes;
+ 
+ // FUNCTION render head sphere
+ function renderHead() {
+   d3.select('#head').selectAll('svg').remove();
+ 
+   const svg = d3
+     .select('#head')
+     .append('svg')
+     .attr('id', 'vis')
+     .attr('viewBox', '0 0 400 400')
+     .style('width', '100%')
+     .style('height', 'auto');
+ 
+   projection = d3
+     .geoOrthographic()
+     .scale(150)
+     .translate([200, 200])
+     .clipAngle(90);
+ 
+   path = d3.geoPath(projection);
+   const defs = svg.append('defs');
+ 
+   const grad = defs
+     .append('linearGradient')
+     .attr('id', 'shade')
+     .attr('gradientUnits', 'userSpaceOnUse')
+     .attr('x1', 200)
+     .attr('y1', 0)
+     .attr('x2', 200)
+     .attr('y2', 400);
+ 
+   grad.append('stop').attr('offset', '0%').attr('stop-color', '#FFF9C4');
+   grad.append('stop').attr('offset', '100%').attr('stop-color', '#FDD835');
+ 
+   const g = svg.append('g');
+ 
+   spherePath = g
+     .append('path')
+     .datum({type: 'Sphere'})
+     .attr('d', path)
+     .attr('fill', 'url(#shade)')
+     .attr('stroke', '#666');
+ 
+   graticulePath = g
+     .append('path')
+     .datum(d3.geoGraticule()())
+     .attr('d', path)
+     .attr('fill', 'none')
+     .attr('stroke', '#666')
+     .attr('stroke-width', 0.5);
+     
+   eyes = g
+     .selectAll('circle.eye')
+     .data([[-25, 10], [25, 10]])
+     .join('circle')
+     .attr('class', 'eye')
+     .attr('r', 15)
+     .attr('fill', '#333')
+     .attr('cx', d => projection(d)[0])
+     .attr('cy', d => projection(d)[1]);
+ }
+ 
+ renderHead();
