@@ -4,7 +4,7 @@
 
 body {
   font: 100%/1.5 system-ui;
-  margin: 1.45em;
+  margin: 1em;
 }
 
 /* #axes-graphs {
@@ -55,12 +55,6 @@ top-right-button {
   background: #e0e0e0;
 }
 
-#axes-graphs label {
-  grid-column: span 3;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
-
 #disp-graph-container label {
   display: flex;
   justify-content: center;
@@ -98,7 +92,6 @@ top-right-button {
   position: sticky;
   top: 0;
   height: 100vh;
-  /* background: #f8f8f8; */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,11 +110,26 @@ top-right-button {
   transform: translate(-50%, -50%);
 }
 
-.top-right-button {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1000;
+#axes-graphs {
+  gap: 0.25em;
+}
+
+#axes-graphs svg {
+  width: 100% !important;
+  height: 200px !important;
+  display: block;
+}
+
+#axes-graphs label {
+  font-size: 12px;
+}
+
+#xy-top,
+#yz-side,
+#xz-front {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 #title {

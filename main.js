@@ -95,8 +95,8 @@ function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
 // FUNCTION HELPER to render one axis graph
 function renderGraph(data, axes, x, y) {
 
-    const aspectWidth = 500;
-    const aspectHeight = 500;
+    const aspectWidth = 300;
+    const aspectHeight = 300;
 
     // Update responsive SVG
     const svg = d3.select(`#${axes}`)
@@ -136,6 +136,7 @@ function renderGraph(data, axes, x, y) {
         .attr("x", innerWidth / 2)
         .attr("y", innerHeight + 30)
         .attr("text-anchor", "middle")
+        .attr("font-size", "10px")
         .text(`${x}_mm`);
 
     g.append("text")
@@ -144,6 +145,7 @@ function renderGraph(data, axes, x, y) {
         .attr("y", -25)
         .attr("transform", "rotate(-90)")
         .attr("text-anchor", "middle")
+        .attr("font-size", "10px")
         .text(`${y}_mm`);
 
     // g.selectAll(".point")
@@ -237,47 +239,6 @@ function renderAxesGraph(selectedMarker, selectedGenre) {
     // renderDispGraph(filteredData);
     animateAxesPlots();
 };
-
-// // FUNCTION update graphs for filters
-// function updateAxesGraph() {
-//   let selectedGroup  = d3.select("#group-filter").property("value");
-//   let selectedMarker = d3.select("#marker-filter").property("value");
-//   let selectedGenre  = d3.select("#genre-filter").property("value");
- 
- 
-//   // initial draw:
-//   renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
- 
- 
-//   // Whenever group changes:
-//   d3.select("#group-filter").on("change", function () {
-//     selectedGroup = d3.select(this).property("value");
-//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-//     // ALSO re‐draw the “Disp” charts (if that’s what you want):
-//     updateAllCharts();
-//   });
- 
- 
-//   // Whenever genre changes:
-//   d3.select("#genre-filter").on("change", function () {
-//     selectedGenre = d3.select(this).property("value");
-//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-//     // ALSO re‐draw the “Disp” charts:
-//     updateAllCharts();
-//   });
- 
- 
-//   // Whenever marker changes:
-//   d3.select("#marker-filter").on("change", function () {
-//     selectedMarker = d3.select(this).property("value");
-//     renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-//     // ALSO re‐draw the “Disp” charts:
-//     updateAllCharts();
-//   });
-//  }
- 
-
-// updateAxesGraph();
 
 const tooltip = d3.select("body").append("div")
   .attr("class", "d3-tooltip")
@@ -557,6 +518,7 @@ scroller
     offset: 0.5,
   })
   .onStepEnter(({index}) => {
+    
     if (index === 1) {
       window.removeEventListener('mousemove', handleMouse);
       targetYaw = 0;
@@ -570,12 +532,12 @@ scroller
       window.addEventListener('mousemove', handleMouse);
     }
 
-    if (index === 3) {
+    if (index === 3) { // step: During a minute of complete silence....
         d3.select('#head').style('display', 'none');
         d3.select('#intro-graph').style('display', 'block').selectAll('*').remove();
         globalColorScale = d3.scaleSequential(genreToColor['silence']).domain(globalTimeExtent);
         renderDispGraph(silenceData);
-    } else if (index === 5) {
+    } else if (index === 5) { // step: During music stimuli like EDM....
         d3.select('#head').style('display', 'none');
         d3.select('#intro-graph').style('display', 'block').selectAll('*').remove();
         globalColorScale = d3.scaleSequential(genreToColor['edm']).domain(globalTimeExtent);
@@ -602,7 +564,6 @@ scroller
             .attr('cy', d => projection(d)[1]);
     } else {
         d3.select('#axes-graphs').style('display', 'none');
-        window.addEventListener('mousemove', handleMouse);
     }
   });
 
@@ -620,42 +581,4 @@ window.addEventListener('scroll', () => {
 });
 
 // updateAxesGraph();
-
-/**
- * Given an array of rows [{time_s, x_mm, y_mm, z_mm}, …] for a single block,
- * compute the average frame‐to‐frame displacement in mm/s.
- */
-
-function averageDisplacement(data) {
-    // 1) Build an array of instantaneous mm/frame displacements:
-    const instDisps = data.map((d, i, arr) => {
-      if (i === 0) return 0;    
-      const prev = arr[i - 1];
-      const dx = d.x_mm - prev.x_mm;
-      const dy = d.y_mm - prev.y_mm;
-      const dz = d.z_mm - prev.z_mm;
-      return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    });
-  
-    // 2) Drop the first zero (frame 0) and compute the mean (mm/frame):
-    const meanMmPerFrame = d3.mean(instDisps.slice(1));
-  
-    // 3) Convert to mm/s by multiplying by the frame rate (100 Hz → 100 frames/sec):
-    const meanMmPerSecond = meanMmPerFrame * 100;
-  
-    return {
-      mmPerFrame:   meanMmPerFrame,
-      mmPerSecond:  meanMmPerSecond
-    };
-  }
-
-  const participantData = NM0004Data.filter(d =>
-    d.group  === 'NM0004' &&
-    d.marker === 'S5'     &&
-    d.genre  === 'edm'
-  ).sort((a, b) => d3.ascending(a.time_s, b.time_s));
-  
-  const avgDisp = averageDisplacement(participantData);
-  console.log("Mean displacement (mm/frame):", avgDisp.mmPerFrame.toFixed(4));
-  console.log("Mean QoM (mm/s):",         avgDisp.mmPerSecond.toFixed(4));
   
