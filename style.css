@@ -36,13 +36,13 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 } */
 
-top-right-button {
-  position: absolute;
+.top-left-button {
+  position: fixed;
   top: 1em;
   right: 1em;
 }
 
-.top-right-button button {
+.top-left-button button {
   padding: 0.5em 1em;
   font-size: 0.9rem;
   cursor: pointer;
@@ -51,7 +51,7 @@ top-right-button {
   border-radius: 4px;
 }
 
-.top-right-button button:hover {
+.top-left-button button:hover {
   background: #e0e0e0;
 }
 

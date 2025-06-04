@@ -237,7 +237,6 @@ function renderAxesGraph(selectedMarker, selectedGenre) {
 
     console.log("done rendering");
     // renderDispGraph(filteredData);
-    animateAxesPlots();
 };
 
 const tooltip = d3.select("body").append("div")
@@ -415,6 +414,8 @@ let projection, path, spherePath, graticulePath, eyes;
 
 // FUNCTION render head sphere
 function renderHead() {
+  d3.select('#head').selectAll('svg').remove();
+
   const svg = d3
     .select('#head')
     .append('svg')
@@ -502,6 +503,58 @@ d3.timer(() => {
     .attr('cy', d => projection(d)[1]);
 });
 
+function animateHeadTrajectory(headData) {
+  const factorX = 5;
+  const factorY = 0.01;
+  const factorZ = 3;
+
+  // base projection
+  const baseTranslate = [200, 200];
+  const baseScale = 150;
+
+  const n = headData.length;
+
+  let i = 0;
+  const timer = d3.interval(() => {
+    if (i < n) {
+      const d = headData[i];
+      // compute shift & scale
+      const dx = d.x_mm * factorX;
+      const dy = d.z_mm * factorZ;
+      const sc = 1 + d.y_mm * factorY;
+
+      // apply to projection (keeps globe centered and moves around)
+      projection.translate([baseTranslate[0] + dx, baseTranslate[1] + dy]);
+      projection.scale(baseScale * sc);
+
+      // redraw head
+      spherePath.attr('d', path);
+      graticulePath.attr('d', path);
+      eyes
+        .attr('cx', pt => projection(pt)[0])
+        .attr('cy', pt => projection(pt)[1]);
+
+      i += 1;
+    }
+  }, 1);
+
+  // compute how long the axes‐plot “fade‐in” lasts
+  const totalAxesTime = (n - 1) + 400;
+
+  // once axes are fully done, stop the interval and reset the head to center/scale
+  setTimeout(() => {
+    timer.stop();
+    return;
+    // projection.translate(baseTranslate);
+    // projection.scale(baseScale);
+    // spherePath.attr('d', path);
+    // graticulePath.attr('d', path);
+    // eyes
+    //   .attr('cx', pt => projection(pt)[0])
+    //   .attr('cy', pt => projection(pt)[1]);
+  }, totalAxesTime);
+}
+
 // scrollytelling script
 const scroller = scrollama();
 const silenceData = NM0004Data.filter(d =>
@@ -518,13 +571,13 @@ scroller
     offset: 0.5,
   })
   .onStepEnter(({index}) => {
-    
+
     if (index === 1) {
       window.removeEventListener('mousemove', handleMouse);
       targetYaw = 0;
       targetPitch = 0;
       projection.rotate([0,0]);
-      spherePath.attr('d',path);
+      spherePath.attr('d', path);
       eyes
         .attr('cx', d => projection(d)[0])
         .attr('cy', d => projection(d)[1]);
@@ -537,22 +590,6 @@ scroller
         d3.select('#intro-graph').style('display', 'block').selectAll('*').remove();
         globalColorScale = d3.scaleSequential(genreToColor['silence']).domain(globalTimeExtent);
         renderDispGraph(silenceData);
-    } else if (index === 5) { // step: During music stimuli like EDM....
-        d3.select('#head').style('display', 'none');
-        d3.select('#intro-graph').style('display', 'block').selectAll('*').remove();
-        globalColorScale = d3.scaleSequential(genreToColor['edm']).domain(globalTimeExtent);
-        renderDispGraph(edmData);
-    } else {
-        d3.select('#intro-graph').style('display', 'none');
-        d3.select('#head').style('display', 'block');
-    }
-
-    if (index === 4) {
-        d3.select('#head').style('display', 'block');
-        d3.select('#axes-graphs').style('display', 'grid');
-        d3.select('#intro-graph').style('display', 'none');
-        globalColorScale = d3.scaleSequential(genreToColor['silence']).domain(globalTimeExtent);
-        renderAxesGraph('S5', 'silence');
 
         window.removeEventListener('mousemove', handleMouse);
         targetYaw = 0;
@@ -560,12 +597,64 @@ scroller
         projection.rotate([0,0]);
         spherePath.attr('d', path);
         eyes
-            .attr('cx', d => projection(d)[0])
-            .attr('cy', d => projection(d)[1]);
+          .attr('cx', d => projection(d)[0])
+          .attr('cy', d => projection(d)[1]);
+
+    } else if (index === 5) { // step: During music stimuli like EDM....
+        d3.select('#head').style('display', 'none');
+        d3.select('#intro-graph').style('display', 'block').selectAll('*').remove();
+        globalColorScale = d3.scaleSequential(genreToColor['edm']).domain(globalTimeExtent);
+        renderDispGraph(edmData);
+
+        window.removeEventListener('mousemove', handleMouse);
+        targetYaw = 0;
+        targetPitch = 0;
+        projection.rotate([0,0]);
+        spherePath.attr('d', path);
+        eyes
+          .attr('cx', d => projection(d)[0])
+          .attr('cy', d => projection(d)[1]);
+
+    } else {
+        d3.select('#intro-graph').style('display', 'none');
+        d3.select('#head').style('display', 'block');
+    }
+
+    if (index === 4) {
+        window.removeEventListener('mousemove', handleMouse);
+        d3.select('#head').style('display', 'block');
+        d3.select('#axes-graphs').style('display', 'grid');
+        d3.select('#intro-graph').style('display', 'none');
+        globalColorScale = d3.scaleSequential(genreToColor['silence']).domain(globalTimeExtent);
+        renderAxesGraph('S5', 'silence');
+        animateHeadTrajectory(silenceData);
+        animateAxesPlots();
+    } else if (index === 6) {
+        window.removeEventListener('mousemove', handleMouse);
+        d3.select('#head').style('display', 'block');
+        d3.select('#axes-graphs').style('display', 'grid');
+        d3.select('#intro-graph').style('display', 'none');
+        globalColorScale = d3.scaleSequential(genreToColor['edm']).domain(globalTimeExtent);
+        renderAxesGraph('S5', 'silence');
+        animateHeadTrajectory(edmData);
+        animateAxesPlots();
     } else {
         d3.select('#axes-graphs').style('display', 'none');
+        projection.rotate([0,0]);
+        spherePath.attr('d', path);
+        eyes
+          .attr('cx', d => projection(d)[0])
+          .attr('cy', d => projection(d)[1]);
     }
   });
+//   .onStepExit(({index}) => {
+
+//     if (index === 4) {
+//         renderHead();
+//         window.addEventListener('mousemove', handleMouse);
+//     }
+
+//   });
 
 const title = document.getElementById('title');
 const startArrow = document.getElementById('start-arrow');
