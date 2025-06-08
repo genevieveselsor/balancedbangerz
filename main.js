@@ -241,7 +241,7 @@ function renderHead(containerSelector) {
 
   projection = d3
     .geoOrthographic()
-    .scale(100)
+    .scale(150)
     .translate([200, 200])
     .rotate(rotation)
     .clipAngle(90);
@@ -287,7 +287,7 @@ function renderHead(containerSelector) {
     ])
     .join('circle')
     .attr('class', 'eye')
-    .attr('r', 10)
+    .attr('r', 15)
     .attr('fill', '#333')
     .attr('cx', (d) => projection(d)[0])
     .attr('cy', (d) => projection(d)[1]);
@@ -650,21 +650,28 @@ function animateDispGraph() {
 
 renderHead('#head');
 
-const svg = d3.select('#head svg');
 const maxYaw = 10;
 const maxPitch = 8;
-const cx = 200;
-const cy = 200;
 let targetYaw = 0;
 let targetPitch = 0;
 let currentYaw = 0;
 let currentPitch = 0;
 
 function handleMouse(event) {
-  const [mx, my] = d3.pointer(event, svg.node());
-  targetYaw = ((mx - cx) / cx) * maxYaw;
-  targetPitch = ((cy - my) / cy) * maxPitch;
+  const svg = d3.select('#head svg');
+  const svgNode = svg.node();
+  const [mx, my] = d3.pointer(event, svgNode);
+  const { width, height } = svgNode.getBoundingClientRect();
+  const cx = width / 2;
+  const cy = height / 2;
+
+  targetYaw = -((cx - mx) / cx) * maxYaw;
+  targetPitch = -((my - cy) / cy) * maxPitch;
+
+  // currentYaw = targetYaw;
+  // currentPitch = targetPitch;
 }
+
 window.addEventListener('mousemove', handleMouse);
 
 d3.timer(() => {
