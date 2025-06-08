@@ -91,7 +91,7 @@ body {
   TOP SECTION 
 ──────────────────────────────────────────────────────────────────────────────*/
 #top-section {
-  display: flex;
+  display: grid;
   gap: 1em;
   box-sizing: border-box;
   justify-content: center;
@@ -99,37 +99,36 @@ body {
 }
 
 #axes-graphs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
+  gap: 1rem; /* spacing between panels */
+  align-items: start; /* align labels and svgs */
+  justify-content: space-between;
+  padding: 1rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#axes-graphs div{
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  flex: 0 0 400px;
+  grid-template-rows: 10% 90%;
+  align-items: center;
+  justify-content: center;
+  width: 85%;
 }
 
-.axes-container {
-  position: relative;
-  flex: 0 0 400px;
-  overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+#axes-graphs label {
+  grid-column: span 3;
+  margin-bottom: 0.5rem;
+  text-align: center;
 }
 
-.axes-container label {
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  padding: 2px 6px;
-  font-size: 12px;
-  border-radius: 4px;
-  z-index: 1;
-}
-
-#axes-graphs div svg {
+#axes-graphs svg{
+  flex: 1;
+  grid-row: 2;
   width: 100%;
-  height: 100%;
-  overflow: visible;
-  display: block;
+  height: auto;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -158,22 +157,50 @@ body {
   DISPLACEMENT GRAPH
 ──────────────────────────────────────────────────────────────────────────────*/
 
+#disp-chart {
+  width: 100%;
+}
+
+#disp-chart {
+  width: 100%;
+}
+
 #disp-chart-container {
-  margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
+  grid-template-rows: 10% 90%;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+#chart-head-wrapper {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 2/3 and 1/3 split */
+  gap: 1rem; /* optional space between chart and head */
+  align-items: center;
+  justify-content: space-evenly;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1rem;
+}
+
+/* #disp-chart-container {
+  margin-top: 1.5rem;
+  display: grid;
+  flex-direction: row;
   align-items: center;
 }
 
 #disp-chart-container label {
-  font-size: 12px;
+  font-size: 16px;
   margin-bottom: 0.5rem;
 }
 
 #disp-chart {
   width: 100%;
   max-width: 815px;
-}
+} */
 
 #disp-chart svg {
   width: 100%;
