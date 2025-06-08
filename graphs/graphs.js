@@ -842,6 +842,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     .attr('value', (d) => d)
     .text((d) => d);
 
+  d3.select('#replay-button').on('click', () => {
+    if (headTimer) headTimer.stop();
+    animate(filteredData);
+  });
+
   initializeViewToggle();
   updateAxesGraph();
   initParticipantGenreToggle();
