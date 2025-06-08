@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
     <script src="main.js" type="module"></script>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <title>Balanced Bangerz</title>
-</head>
-<body>
+  </head>
+  <body>
     <div class="top-left-button">
-        <button onclick="location.href='writeup.html'">Go to Writeup</button>
+      <button onclick="location.href='writeup.html'">Go to Writeup</button>
     </div>
 
     <div id="title">
@@ -20,169 +20,78 @@
     </div>
 
     <div id="content">
-    <!-- <h1>Balanced Bangerz</h1> -->
-        <div id="scrolly">
+      <!-- <h1>Balanced Bangerz</h1> -->
+      <div id="scrolly">
         <div id="story">
-            <div class="step">
-              <p>Meet participant NM0004S4.</p>
-            </div>
-            <div class="step">
-              <p>In 2015, researchers at the University of Oslo tasked participants, including NM0004S4, with standing completely still while listening to different sound stimuli. The objective was to examine the effects of music stimuli on movement, mainly how the stimuli would induce involuntary motion even when participants tried to remain perfectly still. Their motion data were recorded using a high-precision camera system with millimeter resolution.</p>
-            </div>
-            <div class="step">
-              <p>Let's see how NM0004S4 performed!</p>
-            </div>
-            <div class="step">
-              <p>During a minute of complete silence, their average displacement was 3.772 mm/s, indicating that maintaining absolute stillness is difficult even without sound.</p>
-            </div>
-            <div class="step">
-              <p>Let's see how they did with no sound:</p>
-            </div>
-            <div class="step">
-              <p>When exposed to music, such as EDM, NM0004S5's average displacement rose to 7.458 mm/s, reflecting a stronger, rhythmically induced motion.</p>
-            </div>
-            <div class="step">
-              <p>Here's how they moved during EDM:</p>
-            </div>
-            <div class="step">
-              <p>This increased motion occurs during any music stimuli, not just EDM. And so, not only can you not stay perfectly still regardless of sound, but music causes you to involuntarily move!</p>
-            </div>
-            <button id="next-button" onclick="location.href='graphs/index.html'">
-              Explore the data!
-            </button>
-
+          <div class="step">
+            <p>Meet participant NM0004S4.</p>
+          </div>
+          <div class="step">
+            <p>
+              In 2015, researchers at the University of Oslo tasked
+              participants, including NM0004S4, with standing completely still
+              while listening to different sound stimuli. The objective was to
+              examine the effects of music stimuli on movement, mainly how the
+              stimuli would induce involuntary motion even when participants
+              tried to remain perfectly still. Their motion data were recorded
+              using a high-precision camera system with millimeter resolution.
+            </p>
+          </div>
+          <div class="step">
+            <p>Let's see how NM0004S4 performed!</p>
+          </div>
+          <div class="step">
+            <p>
+              During a minute of complete silence, their average displacement
+              was 3.772 mm/s, indicating that maintaining absolute stillness is
+              difficult even without sound.
+            </p>
+          </div>
+          <div class="step">
+            <p>Let's see how they did with no sound:</p>
+          </div>
+          <div class="step">
+            <p>
+              When exposed to music, such as EDM, NM0004S5's average
+              displacement rose to 7.458 mm/s, reflecting a stronger,
+              rhythmically induced motion.
+            </p>
+          </div>
+          <div class="step">
+            <p>Here's how they moved during EDM:</p>
+          </div>
+          <div class="step">
+            <p>
+              Notice the difference? This discrepancy is present in all
+              participants' performances. Let's explore how others did!
+            </p>
+          </div>
+          <button id="next-button" onclick="location.href='graphs/index.html'">
+            Explore the data!
+          </button>
         </div>
-        
+
         <div id="graphic">
           <div id="head"></div>
+          <div id="view-toggle"></div>
 
-            <div id="axes-graphs" style="display: none">
-              <div id="xy-top">
-                  <label>Top</label>
-              </div>
-              
-              <div id="yz-side">
-                  <label>Side</label>
-              </div>
-              
-              <div id="xz-front">
-                  <label>Front</label>
-              </div>
-            </div>
-
-            <div id="intro-graph" style="display: none"></div>
-        </div>
-        </div>
-
-        <!-- <h3>Filters</h3>
-        <div id="filters">
-          <div id="group-filter-container">
-            <label for="group-filter">Choose a Group:</label>
-            <select name="group" id="group-filter">
-              <option value="NM0001">NM0001</option>
-              <option value="NM0004">NM0004</option>
-              <option value="NM0011">NM0011</option>
-            </select> -->
-            
-            <!-- <p>Groups are as follows</p>
-            <ul>
-              <li>NM0001: ACABDA</li>
-              <ul>
-                <li>Silence</li>
-                <li>Salsa</li>
-                <li>Silence</li>
-                <li>Meditation</li>
-                <li>EDM</li>
-                <li>Silence</li>
-              </ul>
-              <li>NM0004: ABCDAA</li>
-              <ul>
-                <li>Silence</li>
-                <li>Meditation</li>
-                <li>Salsa</li>
-                <li>EDM</li>
-                <li>Silence</li>
-                <li>Silence</li>
-              </ul>
-              <li>NM0011: AABDCA</li>
-              <ul>
-                <li>Silence</li>
-                <li>Silence</li>
-                <li>Meditation</li>
-                <li>EDM</li>
-                <li>Salsa</li>
-                <li>Silence</li>
-              </ul>
-            </ul> -->
-           
-          <!-- </div> -->
-
-          <!-- <div id="genre-filter-container">
-            <label for="genre-filter">Choose a Sound:</label>
-            <select name="genre" id="genre-filter">
-              <option value="silence">Silence</option>
-              <option value="salsa">Salsa</option>
-              <option value="meditation">Meditation</option>
-              <option value="edm">EDM</option>
-            </select>
-          </div>
-
-          <div id="marker-filter-container">
-            <label for="marker-filter">Choose an Individual:</label>
-            <select name="marker" id="marker-filter">
-              <option value="S1">S1</option>
-              <option value="S2">S2</option>
-              <option value="S3">S3</option>
-              <option value="S4">S4</option>
-              <option value="S5">S5</option>
-              <option value="S6">S6</option>
-              <option value="S7">S7</option>
-              <option value="S8">S8</option>
-              <option value="S9">S9</option>
-              <option value="S10">S10</option>
-              <option value="S11">S11</option>
-              <option value="S12">S12</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="axes-graphs">
+          <div id="axes-graphs" style="display: none">
             <div id="xy-top">
-                <label>Top</label>
+              <label>Top</label>
             </div>
-            
+
             <div id="yz-side">
-                <label>Side</label>
+              <label>Side</label>
             </div>
-            
+
             <div id="xz-front">
-                <label>Front</label>
+              <label>Front</label>
             </div>
-        </div>
-
-        <div id="disp-graph-container">
-          <label>Displacement Over Time</label>
-          <div id="disp-chart"></div>
-        </div>
-
-        <div>
-          <div id="disp-all">
-            <label for="disp-all">All‐Subjects Average Displacement</label>
-            <div id="disp-all"></div>
           </div>
-        
-          <!-- Selected Group Average Displacement -->
-          <!-- <div id="disp-group">
-            <label for="disp-group">Selected Group Average Displacement</label>
-            <div id="disp-group"></div>
-          </div>
-        
-          <!-- Selected Participant/Marker Average Displacement -->
-          <!-- <div id="disp-participant">
-            <label for="disp-participant">Selected Participant Average Displacement</label>
-            <div id="disp-participant"></div>
-          </div> -->
-        <!-- </div> -->
-  </div>
-</body>
+
+          <div id="intro-graph" style="display: none"></div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>
