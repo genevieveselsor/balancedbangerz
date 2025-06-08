@@ -321,7 +321,7 @@ function renderAxesPlot(containerId, data, xKey, yKey) {
       .attr('x', innerWidth / 2)
       .attr('y', innerHeight + margin.bottom - 5)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '10px')
+      .attr('font-size', '14px')
       .text(xKey);
 
     svg
@@ -330,7 +330,7 @@ function renderAxesPlot(containerId, data, xKey, yKey) {
       .attr('x', -innerHeight / 2)
       .attr('y', -margin.left + 12)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '10px')
+      .attr('font-size', '14px')
       .text(yKey);
 
     svg
@@ -482,8 +482,8 @@ function animate(headData) {
   // const step = 4;
   // const TICK = 10;
 
-  const totalDuration = 6000; // in ms
-  const TICK = 10;
+  const totalDuration = 4000; // in ms
+  const TICK = 7;
   const steps = headData.length;
   const step = Math.ceil(steps / (totalDuration / TICK));
 
@@ -705,7 +705,10 @@ scroller
     offset: 0.5,
   })
   .onStepEnter(({ index }) => {
-    if (index === 1) {
+    if (index === 0) {
+      animateFigureEight();
+    }
+    if (index === 3) {
       window.removeEventListener('mousemove', handleMouse);
       targetYaw = 0;
       targetPitch = 0;
@@ -718,7 +721,7 @@ scroller
       window.addEventListener('mousemove', handleMouse);
     }
 
-    if (index === 3) {
+    if (index === 5) {
       // step: During a minute of complete silence....
       d3.select('#head').style('display', 'none');
       d3.select('#intro-graph')
@@ -738,7 +741,7 @@ scroller
       eyes
         .attr('cx', (d) => projection(d)[0])
         .attr('cy', (d) => projection(d)[1]);
-    } else if (index === 5) {
+    } else if (index === 7) {
       // step: During music stimuli like EDM....
       d3.select('#head').style('display', 'none');
       d3.select('#intro-graph')
@@ -763,7 +766,7 @@ scroller
       d3.select('#head').style('display', 'block');
     }
 
-    if (index === 4) {
+    if (index === 6) {
       window.removeEventListener('mousemove', handleMouse);
       d3.select('#head').style('display', 'block');
       d3.select('#axes-graphs').style('display', 'grid');
@@ -774,7 +777,7 @@ scroller
         .domain(globalTimeExtent);
       filteredData = silenceData;
       updateView();
-    } else if (index === 6) {
+    } else if (index === 8) {
       window.removeEventListener('mousemove', handleMouse);
       d3.select('#head').style('display', 'block');
       d3.select('#axes-graphs').style('display', 'grid');
@@ -796,18 +799,28 @@ scroller
       currentView = 'front';
       renderHead('#head');
     }
+
+    if (index === 9) {
+      animateFigureEight();
+    }
   })
   .onStepExit(({ index }) => {
-    if (index === 5) {
+    if (index === 1) {
+      headTimer.stop();
+    }
+    if (index === 6) {
+      headTimer.stop();
+    }
+    if (index === 7) {
       renderHead('#head');
       projection.rotate([0, 0]);
       spherePath.attr('d', path);
       eyes
         .attr('cx', (d) => projection(d)[0])
         .attr('cy', (d) => projection(d)[1]);
-    } else if (index === 6) {
+    } else if (index === 8) {
+      headTimer.stop();
       renderHead('#head');
-    } else if (index === 7) {
       projection.rotate([0, 0]);
       spherePath.attr('d', path);
       eyes
@@ -828,3 +841,26 @@ window.addEventListener('scroll', () => {
     title.classList.add('hidden');
   }
 });
+
+function animateFigureEight(loopDuration = 5000) {
+  if (headTimer) headTimer.stop();
+
+  // const svgNode = d3.select('#head svg').node();
+  const cx = 400 / 2;
+  const cy = 400 / 2;
+  const A = 20;
+  const B = 10;
+
+  headTimer = d3.timer((elapsed) => {
+    const t = ((elapsed % loopDuration) / loopDuration) * 2 * Math.PI;
+    const x = A * Math.sin(t);
+    const y = B * Math.sin(2 * t);
+
+    projection.translate([cx + x, cy + y]);
+    spherePath.attr('d', path);
+    graticulePath.attr('d', path);
+    eyes
+      .attr('cx', (d) => projection(d)[0])
+      .attr('cy', (d) => projection(d)[1]);
+  });
+}
