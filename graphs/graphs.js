@@ -1,817 +1,844 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
-import scrollama from 'https://cdn.jsdelivr.net/npm/scrollama@3.2.0/+esm';
 
-// FUNCTION import CSV file
-async function loadData(filename) {
-    try {
-        const rawData = await d3.csv(`../data/${filename}.csv`);
-        const data = rawData.map(d => ({
-            group: d.group,
-            marker: d.marker,
-            block: d.block,
-            genre: d.genre,
-            time_s: +d.time_s,
-            x_mm: +d.x_mm,
-            y_mm: +d.y_mm,
-            z_mm: +d.z_mm,
-        }));
-        return data;
-    } catch (error) {
-        console.error("Error loading the CSV file:", error);
-    }
-};
+/* GLOBAL VARIABLES */
+let currentView = 'front';
+let allData = [];
+let filteredData = [];
+let globalTimeExtent = [0, 0];
+let groups = {};
 
-// import data
-const NM0001Data = await loadData('NM0001-cleaned');
-const NM0004Data = await loadData('NM0004-cleaned');
-const NM0011Data = await loadData('NM0011-cleaned');
-// NOTE: data keys are following
-// ,group,marker,block,time_s,genre,x_mm,y_mm,z_mm
-
-///////////////////////////////////////////////////////
-// SANDBOX
-
-///////////////////////////////////////////////////////
-
-// GLOBAL VARIABLES
-let groups = {
-    "NM0001": NM0001Data,
-    "NM0004": NM0004Data,
-    "NM0011": NM0011Data,
-};
-
-let genreToColor = {
-  'silence': d3.interpolateBlues,
-  'salsa': d3.interpolateOranges,
-  'meditation': d3.interpolateGreens,
-  'edm': d3.interpolateReds,
-};
-
-const genreList = ['silence','salsa','meditation','edm'];
-const genreOrdinal = d3.scaleOrdinal()
-  .domain(genreList)
-  .range(d3.schemeCategory10);
-
-// flatten all groups into one array
-const allData = [...NM0001Data, ...NM0004Data, ...NM0011Data];
-
-// global time range across every sample
-const globalTimeExtent = d3.extent(allData, d => d.time_s);
-
-// one single color scale for every chart
-let globalColorScale = d3.scaleSequential(genreToColor['silence'])
-                           .domain(globalTimeExtent);
-
-// for animation
-let dispPath, dispLength, dispDataGlobal;
+let projection;
+let path;
+let spherePath;
+let graticulePath;
+let eyes;
 let axesPoints = [];
+let headTimer = null;
+let dispPoints = null;
 
-///////////////////////////////////////////////////////
+/* GENRE COLOR ENCODING */
+const genreToColor = {
+  silence: d3.interpolateBlues,
+  salsa: d3.interpolateOranges,
+  meditation: d3.interpolateGreens,
+  edm: d3.interpolateReds,
+};
 
-// FUNCTION filter data by marker and genre
+const genreLineColor = {
+  silence: genreToColor.silence(0.6),
+  salsa: genreToColor.salsa(0.6),
+  meditation: genreToColor.meditation(0.6),
+  edm: genreToColor.edm(0.6),
+};
+
+/* TOOLTIP SETUP */
+const tooltip = d3
+  .select('body')
+  .append('div')
+  .attr('class', 'd3-tooltip')
+  .style('position', 'absolute')
+  .style('pointer-events', 'none')
+  .style('padding', '4px 8px')
+  .style('background', 'rgba(255,255,255,0.9)')
+  .style('border', '1px solid #ccc')
+  .style('border-radius', '4px')
+  .style('font-size', '12px')
+  .style('display', 'none');
+
+/* LOAD DATA */
+function loadData(filename) {
+  return d3
+    .csv(`../data/${filename}.csv`)
+    .then((raw) =>
+      raw.map((d) => ({
+        group: d.group,
+        marker: d.marker,
+        block: d.block,
+        genre: d.genre,
+        time_s: +d.time_s,
+        x_mm: +d.x_mm,
+        y_mm: +d.y_mm,
+        z_mm: +d.z_mm,
+      }))
+    )
+    .catch((err) => {
+      console.error(`Error loading ${filename}:`, err);
+      return [];
+    });
+}
+
+/* FILTER FUNCTION */
 function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
-  globalColorScale = d3
-    .scaleSequential( genreToColor[selectedGenre] )
-    .domain(globalTimeExtent);
-
-  // then do your special‐case filter:
-  if (selectedGenre === "silence") {
-    // silence only first block
-    return data.filter(d =>
-      d.group  === selectedGroup &&
-      d.marker === selectedMarker &&
-      d.genre  === "silence" &&
-      d.block  === "1"
+  if (selectedGenre === 'silence') {
+    return data.filter(
+      (d) =>
+        d.group === selectedGroup &&
+        d.marker === selectedMarker &&
+        d.genre === 'silence' &&
+        d.block === '1'
     );
   }
-
-  return data.filter(d =>
-    d.group  === selectedGroup &&
-    d.marker === selectedMarker &&
-    d.genre  === selectedGenre
+  return data.filter(
+    (d) =>
+      d.group === selectedGroup &&
+      d.marker === selectedMarker &&
+      d.genre === selectedGenre
   );
-};
- 
+}
 
-///////////////////////////////////////////////////////
-
-// FUNCTION HELPER to render one axis graph
-function renderGraph(data, axes, x, y) {
-
-    const aspectWidth = 500;
-    const aspectHeight = 500;
-
-    // Update responsive SVG
-    const svg = d3.select(`#${axes}`)
-        .append("svg")
-        .attr("viewBox", `0 0 ${aspectWidth} ${aspectHeight}`)
-        .attr("preserveAspectRatio", "xMidYMid meet")
-        .style("width", "100%")   // responsive width
-        .style("height", "auto"); // maintain aspect ratio
-
-    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-    const innerWidth = aspectWidth - margin.left - margin.right;
-    const innerHeight = aspectHeight - margin.top - margin.bottom;
-
-    const g = svg.append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Scales based on fixed internal coordinate system
-    const xScale = d3.scaleLinear()
-        .domain([-50, 60])
-        .range([0, innerWidth]);
-
-    const yScale = d3.scaleLinear()
-        .domain([-50, 60])
-        .range([innerHeight, 0]);
-
-    g.append("g")
-        .attr("class", "x-axis")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(xScale));
-
-    g.append("g")
-        .attr("class", "y-axis")
-        .call(d3.axisLeft(yScale));
-
-    g.append("text")
-        .attr("class", "x-label")
-        .attr("x", innerWidth / 2)
-        .attr("y", innerHeight + 30)
-        .attr("text-anchor", "middle")
-        .text(`${x}_mm`);
-
-    g.append("text")
-        .attr("class", "y-label")
-        .attr("x", -innerHeight / 2)
-        .attr("y", -25)
-        .attr("transform", "rotate(-90)")
-        .attr("text-anchor", "middle")
-        .text(`${y}_mm`);
-
-    // g.selectAll(".point")
-    //     .data(data)
-    //     .enter()
-    //     .append("circle")
-    //     .attr("class", "point")
-    //     .attr("cx", d => xScale(d[`${x}_mm`]))
-    //     .attr("cy", d => yScale(d[`${y}_mm`]))
-    //     .attr("r", 3)
-    //     .style("fill", "steelblue");
-
-    const pts = g.selectAll('circle.point')
-    .data(data)
-    .enter().append('circle')
-      .attr('class','point')
-      .attr('cx', d => xScale(d[`${x}_mm`]))
-      .attr('cy', d => yScale(d[`${y}_mm`]))
-      .attr('r', 4)
-      .style('fill', d => globalColorScale(d.time_s))
-      .style('opacity', 0);
-
-    axesPoints.push(pts);
-    
-    // g.selectAll(".point")
-    // .data(data)
-    // .enter().append("circle")
-    //     .attr("class", "point")
-    //     .attr("cx", d => xScale(d[`${x}_mm`]))
-    //     .attr("cy", d => yScale(d[`${y}_mm`]))
-    //     .attr("r", 4)
-    //     .style("fill", d => globalColorScale(d.time_s))
-    //     .style("opacity", 0)
-    // .transition()
-    //     .delay((d,i) => i)
-    //     .duration(200)
-    //     .style("opacity", 1);  
-    
-    // TOOLTIP
-    g.selectAll(".hover-target")
-      .data(data)
-      .enter().append("circle")
-        .attr("class", "hover-target")
-        .attr("cx", d => xScale(d[`${x}_mm`]))
-        .attr("cy", d => yScale(d[`${y}_mm`]))
-        .attr("r", 8)                 // slightly larger than your visible point
-        .attr("fill", "transparent")  // invisible “hit” area
-        .on("mouseover", (event, d) => {
-          tooltip
-            .style("left",  `${event.pageX + 10}px`)
-            .style("top",   `${event.pageY - 25}px`)
-            .style("display", "block")
-            .html(`
-              <strong>${x.toUpperCase()}:</strong> ${d[`${x}_mm`].toFixed(1)}<br/>
-              <strong>${y.toUpperCase()}:</strong> ${d[`${y}_mm`].toFixed(1)}<br/>
-              <strong>time (seconds):</strong> ${d.time_s.toFixed(2)}
-            `);
-        })
-        .on("mousemove", (event) => {
-          // move tooltip with mouse
-          tooltip
-            .style("left",  `${event.pageX + 10}px`)
-            .style("top",   `${event.pageY - 25}px`);
-        })
-        .on("mouseout", () => {
-          tooltip.style("display", "none");
-        });
-};
-
-// FUNCTION render axes graphs
-function renderAxesGraph(selectedGroup, selectedMarker, selectedGenre) { 
-    ["xy-top","yz-side","xz-front"].forEach(id =>
-        d3.select(`#${id}`).selectAll("svg").remove()
-      ); // Clear existing axes graphs
-    const filteredData = getObjectsByValue(groups[selectedGroup], selectedGroup, selectedMarker, selectedGenre);
-    console.log(filteredData);
-
-    if (!filteredData || filteredData.length === 0) {
-        console.warn("No data found.");
-        return;
-    };
-
-    const ids = ["xy-top", "yz-side", "xz-front"];
-
-    ids.forEach((id) => {
-        renderGraph(filteredData, id, id[0], id[1]);
-        console.log('rendered one')
-    });
-
-    console.log("done rendering");
-    renderDispGraph(filteredData);
-    animateAxesPlots();
-    animateDispGraph();
-};
-
-// FUNCTION update graphs for filters
-function updateAxesGraph() {
-  let selectedGroup  = d3.select("#group-filter").property("value");
-  let selectedMarker = d3.select("#marker-filter").property("value");
-  let selectedGenre  = d3.select("#genre-filter").property("value");
- 
- 
-  // initial draw:
-  renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
- 
- 
-  // Whenever group changes:
-  d3.select("#group-filter").on("change", function () {
-    selectedGroup = d3.select(this).property("value");
-    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-    // ALSO re‐draw the “Disp” charts (if that’s what you want):
-    updateAllCharts();
-  });
- 
- 
-  // Whenever genre changes:
-  d3.select("#genre-filter").on("change", function () {
-    selectedGenre = d3.select(this).property("value");
-    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-    // ALSO re‐draw the “Disp” charts:
-    updateAllCharts();
-  });
- 
- 
-  // Whenever marker changes:
-  d3.select("#marker-filter").on("change", function () {
-    selectedMarker = d3.select(this).property("value");
-    renderAxesGraph(selectedGroup, selectedMarker, selectedGenre);
-    // ALSO re‐draw the “Disp” charts:
-    updateAllCharts();
-  });
- }
- 
-
-updateAxesGraph();
-
-const tooltip = d3.select("body").append("div")
-  .attr("class", "d3-tooltip")
-  .style("position", "absolute")
-  .style("pointer-events", "none")
-  .style("padding", "4px 8px")
-  .style("background", "rgba(255,255,255,0.9)")
-  .style("border", "1px solid #ccc")
-  .style("border-radius", "4px")
-  .style("font-size", "12px")
-  .style("display", "none");
-
-///////////////////////////////////////////////////////
-
-// FUNCTION render displacement graph
-function renderDispGraph(data) {
-  // dimensions & margins
-  const width  = 900;
-  const height = 300;
-  const margin = { top: 40, right: 20, bottom: 40, left: 55 };
-  const w = width - margin.left - margin.right;
-  const h = height - margin.top - margin.bottom;
-
-  // clear any old svg in the container
-  const container = d3.select('#disp-chart');
-  container.selectAll('svg').remove();
-
-  // append a fresh <svg>
-  const svg = container.append('svg')
-    .attr('viewBox', `0 0 ${width} ${height}`)
-    .attr('preserveAspectRatio', 'xMidYMid meet')
+/* RENDER HEAD */
+function renderHead(containerSelector) {
+  d3.select(containerSelector).selectAll('svg').remove();
+  const svg = d3
+    .select(containerSelector)
+    .append('svg')
+    .attr('viewBox', '0 0 600 600')
     .style('width', '100%')
     .style('height', 'auto');
 
-  // define gradient stops as before
-  svg.select('defs').remove();
+  let rotation;
+  if (currentView === 'top') rotation = [0, -90, 0];
+  else if (currentView === 'side') rotation = [90, 0, 0];
+  else rotation = [0, 0, 0];
+
+  projection = d3
+    .geoOrthographic()
+    .scale(100)
+    .translate([300, 300])
+    .rotate(rotation)
+    .clipAngle(90);
+
+  path = d3.geoPath(projection);
+
   const defs = svg.append('defs');
-  const grad = defs.append('linearGradient')
-    .attr('id', 'global-disp-gradient')
+  const grad = defs
+    .append('linearGradient')
+    .attr('id', 'shade')
     .attr('gradientUnits', 'userSpaceOnUse')
-    .attr('x1', margin.left)
+    .attr('x1', 300)
     .attr('y1', 0)
-    .attr('x2', margin.left + w)
-    .attr('y2', 0);
+    .attr('x2', 300)
+    .attr('y2', 600);
 
-  const stops = 20;
-  for (let i = 0; i <= stops; i++) {
-    const t = i / stops;
-    const time = globalTimeExtent[0] + t * (globalTimeExtent[1] - globalTimeExtent[0]);
-    grad.append('stop')
-      .attr('offset', `${t * 100}%`)
-      .attr('stop-color', globalColorScale(time));
-  }
+  grad.append('stop').attr('offset', '10%').attr('stop-color', '#FFF9C4');
+  grad.append('stop').attr('offset', '90%').attr('stop-color', '#FDD835');
 
-  // compute displacement data
-  const dispData = data.map((d, i, arr) => {
-    if (i === 0) return { time_s: d.time_s, disp: 0 };
-    // const initial = arr[0];
-    // const dx = d.x_mm - p.x_mm,
-    //       dy = d.y_mm - p.y_mm,
-    //       dz = d.z_mm - p.z_mm;
-    return { time_s: d.time_s, disp: Math.sqrt(d.x_mm**2 + d.y_mm**2 + d.z_mm**2) };
-  });
+  const g = svg.append('g');
 
-  // scales
-  const xScale = d3.scaleLinear()
-    .domain(globalTimeExtent)
-    .range([0, w]);
-  const yScale = d3.scaleLinear()
-    .domain([0, 55])
-    .range([h, 0]);
+  spherePath = g
+    .append('path')
+    .datum({ type: 'Sphere' })
+    .attr('d', path)
+    .attr('fill', 'url(#shade)')
+    .attr('stroke', '#666')
+    .attr('stroke-width', 1);
 
-  // drawing group
-  const g = svg.append('g')
+  graticulePath = g
+    .append('path')
+    .datum(d3.geoGraticule()())
+    .attr('d', path)
+    .attr('fill', 'none')
+    .attr('stroke', '#666')
+    .attr('stroke-width', 0.5);
+
+  eyes = g
+    .selectAll('circle.eye')
+    .data([
+      [-25, 10],
+      [25, 10],
+    ])
+    .join('circle')
+    .attr('class', 'eye')
+    .attr('r', 10)
+    .attr('fill', '#333')
+    .attr('cx', (d) => projection(d)[0])
+    .attr('cy', (d) => projection(d)[1]);
+}
+
+/* RENDER AXES PLOT */
+function renderAxesPlot(containerId, data, xKey, yKey) {
+  d3.select(`#${containerId}`).selectAll('svg').remove();
+  const aspectWidth = 500;
+  const aspectHeight = 500;
+  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+  const innerWidth = aspectWidth - margin.left - margin.right;
+  const innerHeight = aspectHeight - margin.top - margin.bottom;
+
+  const svg = d3
+    .select(`#${containerId}`)
+    .append('svg')
+    .attr('viewBox', `0 0 ${aspectWidth} ${aspectHeight}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '100%')
+    .style('height', 'auto')
+    .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
-  // axes
-  g.append('g')
-    .attr('transform', `translate(0,${h})`)
-    .call(d3.axisBottom(xScale).ticks(12));
-  g.append('g')
-    .call(d3.axisLeft(yScale).ticks(5));
+  const xScale = d3.scaleLinear().domain([-50, 60]).range([0, innerWidth]);
+  const yScale = d3.scaleLinear().domain([-50, 60]).range([innerHeight, 0]);
 
-  g.append("text")
-    .attr("class", "x-label")
-    .attr("x", w / 2)
-    .attr("y", h + 30)
-    .attr("text-anchor", "middle")
-    .text('Time (sec)');
+  svg
+    .append('text')
+    .attr('x', innerWidth / 2)
+    .attr('y', innerHeight + margin.bottom - 5)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '10px')
+    .text(xKey);
 
-  g.append("text")
-      .attr("class", "y-label")
-      .attr("x", -h / 2)
-      .attr("y", -25)
-      .attr("transform", "rotate(-90)")
-      .attr("text-anchor", "middle")
-      .text('Displacement (mm)');
+  svg
+    .append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -innerHeight / 2)
+    .attr('y', -margin.left + 12)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '10px')
+    .text(yKey);
 
-  // line generator
-  const line = d3.line()
-    .x(d => xScale(d.time_s))
-    .y(d => yScale(d.disp));
+  svg
+    .append('g')
+    .attr('transform', `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(xScale));
 
-  dispDataGlobal = dispData;
-  dispPath = g.append('path')
-    .datum(dispDataGlobal)
-    .attr('fill','none')
-    .attr('stroke','url(#global-disp-gradient)')
-    .attr('stroke-width',3)
-    .attr('d', line);
+  svg.append('g').call(d3.axisLeft(yScale));
 
-  // const L = path.node().getTotalLength();
-  // const T = (dispData.length - 1) + 200;
-  // path
-  //   .attr('stroke-dasharray', `${L} ${L}`)
-  //   .attr('stroke-dashoffset', L)
-  //   .transition().duration(T).ease(d3.easeLinear)
-  //   .attr('stroke-dashoffset', 0);
+  const genre = data[0]?.genre || 'silence';
+  const interp = genreToColor[genre] || d3.interpolateViridis;
+  const timeExtent = d3.extent(data, (d) => d.time_s);
+  const colorScale = d3.scaleSequential(interp).domain(timeExtent);
 
-  dispLength = dispPath.node().getTotalLength();
-  dispPath
-    .attr('stroke-dasharray', `${dispLength} ${dispLength}`)
-    .attr('stroke-dashoffset', dispLength);
+  const pts = svg
+    .selectAll('circle.point')
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr('class', 'point')
+    .attr('cx', (d) => xScale(d[xKey]))
+    .attr('cy', (d) => yScale(d[yKey]))
+    .attr('r', 0)
+    .attr('fill', (d) => colorScale(d.time_s))
+    .style('opacity', 0);
 
-  // tooltip hit‐areas
-  g.selectAll('.disp-hover')
+  axesPoints.push(pts);
+
+  svg
+    .selectAll('circle.hover-target')
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr('class', 'hover-target')
+    .attr('cx', (d) => xScale(d[xKey]))
+    .attr('cy', (d) => yScale(d[yKey]))
+    .attr('r', 8)
+    .attr('fill', 'transparent')
+    .on('mouseover', (event, d) => {
+      tooltip
+        .style('left', `${event.pageX + 10}px`)
+        .style('top', `${event.pageY - 25}px`)
+        .style('display', 'block').html(`
+          <strong>${xKey}:</strong> ${d[xKey].toFixed(3)}<br/>
+          <strong>${yKey}:</strong> ${d[yKey].toFixed(3)}<br/>
+          <strong>time (s):</strong> ${d.time_s.toFixed(2)}
+        `);
+    })
+    .on('mousemove', (event) => {
+      tooltip
+        .style('left', `${event.pageX + 10}px`)
+        .style('top', `${event.pageY - 25}px`);
+    })
+    .on('mouseout', () => {
+      tooltip.style('display', 'none');
+    });
+}
+
+/* RENDER DISPLACEMENT GRAPH */
+function renderDispGraph(data) {
+  d3.select('#disp-chart').selectAll('svg').remove();
+
+  const dispData = data.map((d, i) => ({
+    time_s: d.time_s,
+    disp: i === 0 ? 0 : Math.sqrt(d.x_mm ** 2 + d.y_mm ** 2 + d.z_mm ** 2),
+  }));
+
+  const genre = data[0]?.genre || 'silence';
+  const interp = genreToColor[genre] || d3.interpolateViridis;
+  const timeExtent = d3.extent(dispData, (d) => d.time_s);
+  const colorScale = d3.scaleSequential(interp).domain(timeExtent);
+
+  const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+  const width = 900 - margin.left - margin.right;
+  const height = 300 - margin.top - margin.bottom;
+
+  const svg = d3
+    .select('#disp-chart')
+    .append('svg')
+    .attr(
+      'viewBox',
+      `0 0 ${width + margin.left + margin.right} ${
+        height + margin.top + margin.bottom
+      }`
+    )
+    .style('width', '100%')
+    .style('height', 'auto')
+    .append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const xScale = d3.scaleLinear().domain(timeExtent).range([0, width]);
+  const yScale = d3.scaleLinear().domain([0, 55]).range([height, 0]);
+
+  svg
+    .append('g')
+    .attr('transform', `translate(0,${height})`)
+    .call(d3.axisBottom(xScale).ticks(8));
+
+  svg.append('g').call(d3.axisLeft(yScale).ticks(5));
+
+  dispPoints = svg
+    .selectAll('circle.disp-point')
     .data(dispData)
-    .enter().append('circle')
-      .attr('class','disp-hover')
-      .attr('cx', d => xScale(d.time_s))
-      .attr('cy', d => yScale(d.disp))
-      .attr('r', 8)
-      .attr('fill','transparent')
-      .on('mouseover', (event, d) => {
-        tooltip
-          .style('display','block')
-          .html(`
-            <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
-            <strong>disp:</strong> ${d.disp.toFixed(3)} mm
-          `);
-      })
-      .on('mousemove', event => {
-        tooltip
-          .style('left',  `${event.pageX+10}px`)
-          .style('top',   `${event.pageY-25}px`);
-      })
-      .on('mouseout', () => tooltip.style('display','none'));
-};
+    .enter()
+    .append('circle')
+    .attr('class', 'disp-point')
+    .attr('cx', (d) => xScale(d.time_s))
+    .attr('cy', (d) => yScale(d.disp))
+    .attr('fill', (d) => colorScale(d.time_s))
+    .attr('r', 0)
+    .style('opacity', 0);
 
-///////////////////////////////////////////////////////
+  svg
+    .selectAll('circle.disp-hover')
+    .data(dispData)
+    .enter()
+    .append('circle')
+    .attr('class', 'disp-hover')
+    .attr('cx', (d) => xScale(d.time_s))
+    .attr('cy', (d) => yScale(d.disp))
+    .attr('r', 8)
+    .attr('fill', 'transparent')
+    .on('mouseover', (event, d) => {
+      tooltip
+        .style('left', `${event.pageX + 10}px`)
+        .style('top', `${event.pageY - 25}px`)
+        .style('display', 'block').html(`
+          <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
+          <strong>disp:</strong> ${d.disp.toFixed(3)} mm
+        `);
+    })
+    .on('mousemove', (event) => {
+      tooltip
+        .style('left', `${event.pageX + 10}px`)
+        .style('top', `${event.pageY - 25}px`);
+    })
+    .on('mouseout', () => {
+      tooltip.style('display', 'none');
+    });
 
-// FUNCTION animate plots
-function animateAxesPlots() {
-  axesPoints.forEach(pts => {
-    pts.transition()
-      .delay((d, i) => i)
-      .duration(400)
-      .attr('r', 4)
-      .style('opacity', 1);
+  svg
+    .append('text')
+    .attr('x', width / 2)
+    .attr('y', height + margin.bottom - 5)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '12px')
+    .text('Time (s)');
+
+  svg
+    .append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', -margin.left + 15)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '12px')
+    .text('Displacement (mm)');
+}
+
+/* RENDER MINI HEAD */
+function renderMiniHead(containerSelector, view) {
+  d3.select(containerSelector).selectAll('svg').remove();
+  const svg = d3
+    .select(containerSelector)
+    .append('svg')
+    .attr('viewBox', '0 0 100 100')
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '50px')
+    .style('height', '50px')
+    .style('cursor', 'pointer');
+
+  let rotation;
+  if (view === 'top') rotation = [0, -90, 0];
+  else if (view === 'side') rotation = [90, 0, 0];
+  else rotation = [0, 0, 0];
+
+  const miniProj = d3
+    .geoOrthographic()
+    .scale(30)
+    .translate([50, 50])
+    .rotate(rotation)
+    .clipAngle(90);
+
+  const miniPath = d3.geoPath(miniProj);
+
+  const defs = svg.append('defs');
+  const grad = defs
+    .append('linearGradient')
+    .attr('id', `shade-mini-${view}`)
+    .attr('gradientUnits', 'userSpaceOnUse')
+    .attr('x1', 50)
+    .attr('y1', 0)
+    .attr('x2', 50)
+    .attr('y2', 100);
+
+  grad.append('stop').attr('offset', '0%').attr('stop-color', '#FFF9C4');
+  grad.append('stop').attr('offset', '100%').attr('stop-color', '#FDD835');
+
+  const g = svg.append('g');
+  g.append('circle')
+    .attr('cx', 50)
+    .attr('cy', 50)
+    .attr('r', 30)
+    .attr('fill', `url(#shade-mini-${view})`)
+    .attr('stroke', '#aaa')
+    .attr('stroke-width', 1);
+
+  g.append('path')
+    .datum(d3.geoGraticule()())
+    .attr('d', miniPath)
+    .attr('fill', 'none')
+    .attr('stroke', '#aaa')
+    .attr('stroke-width', 0.5);
+
+  g.selectAll('circle.eye-mini')
+    .data([
+      [-25, 5],
+      [25, 5],
+    ])
+    .join('circle')
+    .attr('class', 'eye-mini')
+    .attr('r', 4)
+    .attr('fill', '#333')
+    .attr('cx', (d) => miniProj(d)[0])
+    .attr('cy', (d) => miniProj(d)[1]);
+}
+
+/* ANIMATION */
+function animate(headData) {
+  const f = 1.5;
+  const baseTranslate = [300, 300];
+
+  if (axesPoints.length > 0) {
+    axesPoints[0].attr('r', 0).style('opacity', 0);
+  }
+  if (dispPoints) {
+    dispPoints.attr('r', 0).style('opacity', 0);
+  }
+  if (headTimer) headTimer.stop();
+
+  spherePath.attr('d', path);
+  graticulePath.attr('d', path);
+  eyes.attr('cx', (d) => projection(d)[0]).attr('cy', (d) => projection(d)[1]);
+
+  let i = 0;
+  const n = headData.length;
+  const step = 2;
+  const TICK = 1;
+
+  headTimer = d3.interval(() => {
+    if (i < n) {
+      const d = headData[i];
+      let dx = 0;
+      let dy = 0;
+
+      if (currentView === 'front') {
+        dx = d.x_mm * f;
+        dy = -d.z_mm * f;
+      } else if (currentView === 'top') {
+        dx = d.x_mm * f;
+        dy = -d.y_mm * f;
+      } else {
+        dx = d.y_mm * f;
+        dy = -d.z_mm * f;
+      }
+
+      projection.translate([baseTranslate[0] + dx, baseTranslate[1] + dy]);
+      spherePath.attr('d', path);
+      graticulePath.attr('d', path);
+      eyes
+        .attr('cx', (d) => projection(d)[0])
+        .attr('cy', (d) => projection(d)[1]);
+
+      if (axesPoints.length > 0) {
+        axesPoints[0]
+          .filter((_, idx) => idx === i)
+          .attr('r', 3)
+          .style('opacity', 0.7);
+      }
+      if (dispPoints) {
+        dispPoints
+          .filter((_, idx) => idx === i)
+          .attr('r', 1.5)
+          .style('opacity', 0.7);
+      }
+
+      i += step;
+    } else {
+      headTimer.stop();
+    }
+  }, TICK);
+}
+
+/* VIEW TOGGLE */
+function initializeViewToggle() {
+  const container = d3.select('#view-toggle');
+  container.html('');
+
+  const legend = container
+    .append('div')
+    .attr('id', 'view-legend')
+    .style('display', 'flex')
+    .style('gap', '0.5rem')
+    .style('justify-content', 'center');
+
+  ['front', 'top', 'side'].forEach((view) => {
+    const item = legend
+      .append('div')
+      .attr('class', 'legend-item')
+      .attr('data-view', view)
+      .style('display', 'flex')
+      .style('flex-direction', 'column')
+      .style('align-items', 'center')
+      .style('cursor', 'pointer')
+      .on('click', function () {
+        currentView = view;
+        updateView();
+      });
+
+    renderMiniHead(item.node(), view);
+
+    item
+      .append('span')
+      .text(view[0].toUpperCase() + view.slice(1))
+      .style('font-size', '10px')
+      .style('margin-top', '2px');
+  });
+
+  d3.select('.legend-item[data-view="front"]').classed('active', true);
+}
+
+/* UPDATE VIEW */
+function updateView() {
+  renderHead('#head');
+
+  axesPoints = [];
+  if (currentView === 'front') {
+    d3.select('#xz-front').style('display', 'block');
+    d3.select('#xy-top').style('display', 'none');
+    d3.select('#yz-side').style('display', 'none');
+    renderAxesPlot('xz-front', filteredData, 'x_mm', 'z_mm');
+  } else if (currentView === 'top') {
+    d3.select('#xy-top').style('display', 'block');
+    d3.select('#xz-front').style('display', 'none');
+    d3.select('#yz-side').style('display', 'none');
+    renderAxesPlot('xy-top', filteredData, 'x_mm', 'y_mm');
+  } else {
+    d3.select('#yz-side').style('display', 'block');
+    d3.select('#xz-front').style('display', 'none');
+    d3.select('#xy-top').style('display', 'none');
+    renderAxesPlot('yz-side', filteredData, 'y_mm', 'z_mm');
+  }
+
+  renderDispGraph(filteredData);
+  animate(filteredData);
+}
+
+/* FILTER AND RENDER */
+function updateAxesGraph() {
+  let selectedGroup = d3.select('#group-filter').property('value');
+  let selectedMarker = d3.select('#marker-filter').property('value');
+  let selectedGenre = d3.select('#genre-filter').property('value');
+
+  function applyFilters() {
+    filteredData = getObjectsByValue(
+      allData,
+      selectedGroup,
+      selectedMarker,
+      selectedGenre
+    );
+    updateView();
+  }
+
+  applyFilters();
+
+  d3.select('#group-filter').on('change', function () {
+    selectedGroup = d3.select(this).property('value');
+    applyFilters();
+  });
+  d3.select('#marker-filter').on('change', function () {
+    selectedMarker = d3.select(this).property('value');
+    applyFilters();
+  });
+  d3.select('#genre-filter').on('change', function () {
+    selectedGenre = d3.select(this).property('value');
+    applyFilters();
   });
 }
 
-function animateDispGraph() {
-  dispPath
-    .transition()
-    .duration((dispDataGlobal.length - 1) + 400)
-    .ease(d3.easeLinear)
-    .attr('stroke-dashoffset', 0);
-}
-
-// updateAxesGraph();
-
-// ─────────────────────────────────────────────────────────────
-// (A) computeDisplacementByGenre: returns [{genre, block, series}, …]
-// ─────────────────────────────────────────────────────────────
+/* (A) computeDisplacementByGenre */
 function computeDisplacementByGenre(data) {
-  const byGenre = d3.group(data, d => d.genre);
+  const byGenre = d3.group(data, (d) => d.genre);
   const allGenreArrays = [];
- 
- 
+
   for (const [genreKey, ptsOfGenre] of byGenre.entries()) {
-    const byBlock = d3.group(ptsOfGenre, d => d.block);
+    const byBlock = d3.group(ptsOfGenre, (d) => d.block);
     for (const [blockKey, ptsInBlock] of byBlock.entries()) {
-      const sortedPts = ptsInBlock.slice().sort((a, b) => d3.ascending(a.time_s, b.time_s));
+      const sortedPts = ptsInBlock
+        .slice()
+        .sort((a, b) => d3.ascending(a.time_s, b.time_s));
+
       const instSeries = sortedPts.map((d, i, arr) => {
         if (i === 0) return { time_s: d.time_s, disp: 0 };
         const prev = arr[i - 1];
         const dx = d.x_mm - prev.x_mm;
         const dy = d.y_mm - prev.y_mm;
         const dz = d.z_mm - prev.z_mm;
-        return { time_s: d.time_s, disp: Math.sqrt(dx*dx + dy*dy + dz*dz) };
+        return {
+          time_s: d.time_s,
+          disp: Math.sqrt(dx * dx + dy * dy + dz * dz),
+        };
       });
-      allGenreArrays.push({ genre: genreKey, block: blockKey, series: instSeries });
+
+      allGenreArrays.push({
+        genre: genreKey,
+        block: blockKey,
+        series: instSeries,
+      });
     }
   }
   return allGenreArrays;
- }
- 
- 
- function computeCumulativeSeriesByGenre(data) {
-  // 1) We no longer need a separate annotateRuns(...) step.
-  //    Just normalize everything and trust `d.block` as the run ID.
- 
- 
-  // 2) Group all rows by genre:
-  const byGenre = d3.group(data, d => d.genre);
+}
+
+/* (B) computeCumulativeSeriesByGenre */
+function computeCumulativeSeriesByGenre(data) {
+  const byGenre = d3.group(data, (d) => d.genre);
   const cumArrays = [];
- 
- 
+
   for (const [genreKey, ptsOfGenre] of byGenre.entries()) {
- 
- 
-    // 3) Now group by (group-marker-genre-block).  That block value is already
-    //    what you want, e.g. "1" or "2" etc.  We assume each CSV row's d.block
-    //    is consistent for those 6k rows of that genre.
     const byRun = d3.group(
       ptsOfGenre,
-      d => `${d.group}-${d.marker}-${d.genre}-${d.block}`
+      (d) => `${d.group}-${d.marker}-${d.genre}-${d.block}`
     );
- 
- 
     const eachBlockCum = [];
- 
- 
-    for (const [compositeKey, ptsInBlock] of byRun.entries()) {
- 
- 
-      // 4) Sort those rows by time_s, accumulate displacement from the start of that block:
-      const sortedPts = ptsInBlock.slice()
+
+    for (const [, ptsInBlock] of byRun.entries()) {
+      const sortedPts = ptsInBlock
+        .slice()
         .sort((a, b) => d3.ascending(a.time_s, b.time_s));
- 
- 
       const t0 = sortedPts[0].time_s;
-      let running = 0;
- 
- 
-      const instSeries = sortedPts.map(d => ({
+
+      const instSeries = sortedPts.map((d) => ({
         time_s: d.time_s - t0,
-        disp: Math.sqrt(d.x_mm**2 + d.y_mm**2 + d.z_mm**2)
+        disp: Math.sqrt(d.x_mm ** 2 + d.y_mm ** 2 + d.z_mm ** 2),
       }));
- 
- 
+
       eachBlockCum.push(instSeries);
     }
- 
- 
-    // 5) Average all blocks of this one genre together, point‐by‐point:
-    const minLen = d3.min(eachBlockCum, s => s.length);
+
+    const minLen = d3.min(eachBlockCum, (s) => s.length);
     const averagedCum = [];
- 
- 
+
     for (let i = 0; i < minLen; i++) {
       const t = eachBlockCum[0][i].time_s;
-      const medianDisp = d3.mean(eachBlockCum, s => s[i].disp);
+      const medianDisp = d3.mean(eachBlockCum, (s) => s[i].disp);
       averagedCum.push({ time_s: t, disp: medianDisp });
     }
- 
- 
+
     cumArrays.push({ genre: genreKey, series: averagedCum });
   }
- 
- 
   return cumArrays;
- }
- 
- 
- // ─────────────────────────────────────────────────────────────
- // (C) renderMultiLineChart: draws one solid line per genre in `containerId`.
- //     `globalTimeExtent` is shared x‐axis domain.
- // ─────────────────────────────────────────────────────────────
- const selectedGenre = d3.select("#genre-filter").property("value");
- function renderMultiLineChart(containerId, genreBlocks, globalTimeExtent, highlightGenre) {
-  // 1) Remove any old <svg> inside that container:
-  d3.select(`#${containerId}`).selectAll("svg").remove();
- 
- 
-  // 2) Set up dimensions + margins
-  const width  = 900;
+}
+
+/* (C) renderMultiLineChart */
+function renderMultiLineChart(
+  containerId,
+  genreBlocks,
+  globalTimeExtent,
+  highlightGenre
+) {
+  // clear old chart
+  d3.select(`#${containerId}`).selectAll('svg').remove();
+
+  // dimensions
+  const width = 900;
   const height = 300;
   const margin = { top: 40, right: 20, bottom: 30, left: 60 };
   const innerW = width - margin.left - margin.right;
   const innerH = height - margin.top - margin.bottom;
- 
- 
-  // 3) Append a fresh <svg> element
-  const svg = d3.select(`#${containerId}`)
-    .append("svg")
-      .attr("viewBox", `0 0 ${width} ${height}`)
-      .attr("preserveAspectRatio", "xMidYMid meet")
-      .style("width", "100%")
-      .style("height", "auto");
- 
- 
-  // 4) Create a <g> for margins
-  const g = svg.append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
- 
- 
-  // 5) X‐scale: always use the shared globalTimeExtent
-  const xScale = d3.scaleLinear()
-    .domain(globalTimeExtent)
-    .range([0, innerW]);
- 
- 
-  // 6) Y‐scale: 0 .. max( disp ) across all genreBlocks
-  const yMax = d3.max(genreBlocks, gb => d3.max(gb.series, d => d.disp));
-  const yScale = d3.scaleLinear()
-    .domain([0, 55])
-    .nice()
-    .range([innerH, 0]);
- 
- 
-  // 7) Draw the X‐axis
-  g.append("g")
-    .attr("transform", `translate(0, ${innerH})`)
+
+  // svg + group
+  const svg = d3
+    .select(`#${containerId}`)
+    .append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '100%')
+    .style('height', 'auto')
+    .append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // scales
+  const xScale = d3.scaleLinear().domain(globalTimeExtent).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 55]).nice().range([innerH, 0]);
+
+  // axes
+  svg
+    .append('g')
+    .attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(12))
-    .append("text")
-      .attr("fill", "#000")
-      .attr("x", innerW / 2)
-      .attr("y", margin.bottom - 5)
-      .attr("text-anchor", "middle")
-      .text("Time (seconds)");
- 
- 
-  // 8) Draw the Y‐axis
-  g.append("g")
+    .append('text')
+    .attr('fill', '#000')
+    .attr('x', innerW / 2)
+    .attr('y', margin.bottom - 5)
+    .attr('text-anchor', 'middle')
+    .text('Time (seconds)');
+
+  svg
+    .append('g')
     .call(d3.axisLeft(yScale).ticks(5))
-    .append("text")
-      .attr("fill", "#000")
-      .attr("transform", "rotate(-90)")
-      .attr("y", -margin.left + 15)
-      .attr("x", -innerH / 2)
-      .attr("text-anchor", "middle")
-      .text("Displacement (mm)");
- 
- 
-  // 9) Build a color scale (one distinct color per genre)
-  const uniqueGenres = Array.from(new Set(genreBlocks.map(d => d.genre)));
-  const colorScale = genreOrdinal;
- 
- 
-  // 10) Create a line generator: x = time_s, y = disp
-  const lineGenerator = d3.line()
-    .x(d => xScale(d.time_s))
-    .y(d => yScale(d.disp));
- 
- 
-  // 11) Draw one <path> per genre—**stroke only**, no fill
-  genreBlocks.forEach(gb => {
-    g.append("path")
-      // Make sure fill="none" comes BEFORE stroke
-      .attr("class", "genre-line")   // give each line a class
-      .classed("highlight", gb.genre === highlightGenre)
-      .attr("fill", "none")           // attempt to turn off fill
-      .attr("stroke", colorScale(gb.genre))
-      .attr("stroke-width", 1.5)
-      .attr("opacity", 0.8)
+    .append('text')
+    .attr('fill', '#000')
+    .attr('transform', 'rotate(-90)')
+    .attr('y', -margin.left + 15)
+    .attr('x', -innerH / 2)
+    .attr('text-anchor', 'middle')
+    .text('Displacement (mm)');
+
+  // line generator
+  const lineGenerator = d3
+    .line()
+    .x((d) => xScale(d.time_s))
+    .y((d) => yScale(d.disp));
+
+  // draw one path per genreBlock
+  genreBlocks.forEach((gb) => {
+    svg
+      .append('path')
+      .classed('genre-line', true)
+      .classed('highlight', gb.genre === highlightGenre)
+      .attr('fill', 'none')
+      .attr('stroke', genreLineColor[gb.genre])
+      .attr('stroke-width', 1.5)
+      .attr('opacity', 0.8)
       .datum(gb.series)
-      .attr("d", lineGenerator);
+      .attr('d', lineGenerator);
   });
- 
- 
-  // 12) (Optional) Legend at top‐right showing color→genre
-  const legend = svg.append("g")
-      .attr("transform", `translate(${margin.left + 20}, ${margin.top - 10})`);
- 
- 
+
+  // legend: one swatch per genre present
+  const uniqueGenres = Array.from(new Set(genreBlocks.map((d) => d.genre)));
+  const legend = svg
+    .append('g')
+    .attr('transform', `translate(${margin.left + 20},${margin.top - 10})`);
+
   uniqueGenres.forEach((gname, i) => {
-    const row = legend.append("g")
-      .attr("transform", `translate(0, ${i * 15})`);
-    row.append("rect")
-      .attr("width", 12)
-      .attr("height", 12)
-      .attr("fill", colorScale(gname));
-    row.append("text")
-      .attr("x", 16)
-      .attr("y", 10)
-      .attr("font-size", "12px")
+    const row = legend.append('g').attr('transform', `translate(0,${i * 15})`);
+    row
+      .append('rect')
+      .attr('width', 12)
+      .attr('height', 12)
+      .attr('fill', genreLineColor[gname]);
+    row
+      .append('text')
+      .attr('x', 16)
+      .attr('y', 10)
+      .attr('font-size', '12px')
       .text(gname);
   });
- }
- 
- 
- // ─────────────────────────────────────────────────────────────
- // (D) Draw “All Subjects” immediately (average across everyone)
- // ─────────────────────────────────────────────────────────────
- {
-  const cumAll = computeCumulativeSeriesByGenre(allData);
-  renderMultiLineChart("disp-all", cumAll, globalTimeExtent);
- }
- 
- 
- // ─────────────────────────────────────────────────────────────
- // (E) Draw “Selected Group” on demand (average across that group)
- // ─────────────────────────────────────────────────────────────
- function drawSelectedGroupChart(selectedGroup) {
-  const groupData = groups[selectedGroup];       // e.g. NM0001Data
-  const cumGroup  = computeCumulativeSeriesByGenre(groupData);
-  renderMultiLineChart("disp-group", cumGroup, globalTimeExtent);
- }
- 
- 
- // ─────────────────────────────────────────────────────────────
- // (F) Draw “Selected Participant/Marker” on demand
- //     (average across that participant’s blocks of each genre)
- // ─────────────────────────────────────────────────────────────
- function drawSelectedParticipantChart(selectedGroup, selectedMarker) {
-  const groupData = groups[selectedGroup];
-  const partData  = groupData.filter(d => d.marker === selectedMarker);
-  const cumPt     = computeCumulativeSeriesByGenre(partData);
-  renderMultiLineChart("disp-participant", cumPt, globalTimeExtent);
- }
- 
- 
- // ─────────────────────────────────────────────────────────────
- // (G) Master update function: read dropdowns and redraw group+participant
- // ─────────────────────────────────────────────────────────────
- 
- function updateParticipantChartWithGenres() {
-  const selectedGroup  = d3.select("#group-filter").property("value");
-  const selectedMarker = d3.select("#marker-filter").property("value");
-  // grab which genres are still checked:
-  const activeGenres = d3.selectAll("#genre-toggle input:checked").nodes()
-                          .map(n => n.value);
-
-  // filter that participant’s data *and* by those genres:
-  const partData = groups[selectedGroup]
-                     .filter(d => d.marker === selectedMarker && activeGenres.includes(d.genre));
-
-  // compute the median‐series as before:
-  const cumPt = computeCumulativeSeriesByGenre(partData);
-
-  const highlight = d3.select("#genre-filter").property("value"); 
-
-  // re-render into the “disp-participant” container:
-  renderMultiLineChart("disp-participant", cumPt, globalTimeExtent, highlight);
 }
 
-// 2) initialize the toggle UI:
-function initParticipantGenreToggle() {
-  // whenever a checkbox changes:
-  d3.selectAll("#genre-toggle input")
-    .on("change", updateParticipantChartWithGenres);
+/* (D) and (E) Draw on demand */
+function drawSelectedGroupChart(selectedGroup) {
+  const groupData = groups[selectedGroup];
+  const cumGroup = computeCumulativeSeriesByGenre(groupData);
+  renderMultiLineChart('disp-group', cumGroup, globalTimeExtent);
+}
 
-  // draw once on page‐load:
+function drawSelectedParticipantChart(selectedGroup, selectedMarker) {
+  const groupData = groups[selectedGroup];
+  const partData = groupData.filter((d) => d.marker === selectedMarker);
+  const cumPt = computeCumulativeSeriesByGenre(partData);
+  const highlight = d3.select('#genre-filter').property('value');
+  renderMultiLineChart('disp-participant', cumPt, globalTimeExtent, highlight);
+}
+
+/* (F) Participant-genre toggle */
+function updateParticipantChartWithGenres() {
+  const selectedGroup = d3.select('#group-filter').property('value');
+  const selectedMarker = d3.select('#marker-filter').property('value');
+  const activeGenres = d3
+    .selectAll('#genre-toggle input:checked')
+    .nodes()
+    .map((n) => n.value);
+
+  const partData = groups[selectedGroup].filter(
+    (d) => d.marker === selectedMarker && activeGenres.includes(d.genre)
+  );
+  const cumPt = computeCumulativeSeriesByGenre(partData);
+  const highlight = d3.select('#genre-filter').property('value');
+  renderMultiLineChart('disp-participant', cumPt, globalTimeExtent, highlight);
+}
+
+function initParticipantGenreToggle() {
+  d3.selectAll('#genre-toggle input').on(
+    'change',
+    updateParticipantChartWithGenres
+  );
   updateParticipantChartWithGenres();
 }
 
-// 3) call this once your page (and filters) are set up:
-initParticipantGenreToggle();
- 
- function updateAllCharts() {
-  const selGroup  = d3.select("#group-filter").property("value");
-  const selMarker = d3.select("#marker-filter").property("value");
- 
- 
+/* (G) Master update */
+function updateAllCharts() {
+  const selGroup = d3.select('#group-filter').property('value');
+  const selMarker = d3.select('#marker-filter').property('value');
   drawSelectedGroupChart(selGroup);
   updateParticipantChartWithGenres();
- }
- 
- 
- // 1) Initial draw on page‐load so defaults show immediately
- // 2) Then re‐draw whenever group‐filter or marker‐filter changes
- updateAllCharts();
+}
 
+/* MAIN INITIALIZATION */
+document.addEventListener('DOMContentLoaded', async () => {
+  const [data1, data4, data11] = await Promise.all([
+    loadData('NM0001-cleaned'),
+    loadData('NM0004-cleaned'),
+    loadData('NM0011-cleaned'),
+  ]);
+  allData = [...data1, ...data4, ...data11];
 
+  const cumAll = computeCumulativeSeriesByGenre(allData);
+  globalTimeExtent = d3.extent(
+    cumAll.flatMap((gb) => gb.series.map((d) => d.time_s))
+  );
 
+  renderMultiLineChart('disp-all', cumAll, globalTimeExtent);
 
- // GLOBAL HEAD VARIABLES
- let projection, path, spherePath, graticulePath, eyes;
- 
- // FUNCTION render head sphere
- function renderHead() {
-   d3.select('#head').selectAll('svg').remove();
- 
-   const svg = d3
-     .select('#head')
-     .append('svg')
-     .attr('id', 'vis')
-     .attr('viewBox', '0 0 400 400')
-     .style('width', '100%')
-     .style('height', 'auto');
- 
-   projection = d3
-     .geoOrthographic()
-     .scale(150)
-     .translate([200, 200])
-     .clipAngle(90);
- 
-   path = d3.geoPath(projection);
-   const defs = svg.append('defs');
- 
-   const grad = defs
-     .append('linearGradient')
-     .attr('id', 'shade')
-     .attr('gradientUnits', 'userSpaceOnUse')
-     .attr('x1', 200)
-     .attr('y1', 0)
-     .attr('x2', 200)
-     .attr('y2', 400);
- 
-   grad.append('stop').attr('offset', '0%').attr('stop-color', '#FFF9C4');
-   grad.append('stop').attr('offset', '100%').attr('stop-color', '#FDD835');
- 
-   const g = svg.append('g');
- 
-   spherePath = g
-     .append('path')
-     .datum({type: 'Sphere'})
-     .attr('d', path)
-     .attr('fill', 'url(#shade)')
-     .attr('stroke', '#666');
- 
-   graticulePath = g
-     .append('path')
-     .datum(d3.geoGraticule()())
-     .attr('d', path)
-     .attr('fill', 'none')
-     .attr('stroke', '#666')
-     .attr('stroke-width', 0.5);
-     
-   eyes = g
-     .selectAll('circle.eye')
-     .data([[-25, 10], [25, 10]])
-     .join('circle')
-     .attr('class', 'eye')
-     .attr('r', 15)
-     .attr('fill', '#333')
-     .attr('cx', d => projection(d)[0])
-     .attr('cy', d => projection(d)[1]);
- }
- 
- renderHead();
+  const groupList = Array.from(new Set(allData.map((d) => d.group)));
+  groupList.forEach((g) => {
+    groups[g] = allData.filter((d) => d.group === g);
+  });
+
+  d3.select('#group-filter')
+    .selectAll('option')
+    .data(groupList)
+    .enter()
+    .append('option')
+    .attr('value', (d) => d)
+    .text((d) => d);
+
+  const markerList = Array.from(new Set(allData.map((d) => d.marker)));
+  d3.select('#marker-filter')
+    .selectAll('option')
+    .data(markerList)
+    .enter()
+    .append('option')
+    .attr('value', (d) => d)
+    .text((d) => d);
+
+  initializeViewToggle();
+  updateAxesGraph();
+  initParticipantGenreToggle();
+  updateAllCharts();
+});
