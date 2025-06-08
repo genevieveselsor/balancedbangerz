@@ -437,7 +437,7 @@ function animate(headData) {
 
   let i = 0;
   const n = headData.length;
-  const step = 2;
+  const step = 4;
   const TICK = 1;
 
   headTimer = d3.interval(() => {

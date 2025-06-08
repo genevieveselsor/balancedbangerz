@@ -3,9 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Conclusion</title>
+    <script type="module" src="conclusion.js"></script>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    
+    <div class="top-left-button">
+        <button onclick="location.href='writeup.html'">Go to Writeup</button>
+    </div>
+
+
+    <div id="content">
+    <!-- <h1>Balanced Bangerz</h1> -->
+        <div id="scrolly">
+        <div id="story">
+            <div class="step">
+              <p>Now that you’ve had a chance to explore the data on your own, let’s revisit participant NM0004S4.</p>
+            </div>
+            <div class="step">
+              <p>As we can recall, participant NM0004S4 had an average displacement of 3.772 mm/s during silence and 7.458 mm/s during EDM.</p>
+            </div>
+            <div class="step">
+              <p>However, if we look at participant NM0004S9, an individual in the same group as NM0004S4, we can see that they had an average displacement of 28.476 mm/s during silence and 11.371 mm/s during EDM.</p>
+            </div>
+            <div class="step">
+              <p>When we look at the average displacement by genre for all participants in our data, we can see that it is slightly higher when participants are in silence, meaning that participants strayed further away from their initial starting point during periods of silence.</p>
+            </div>
+            <div class="step">
+              <p>All of the other genres have a similar average displacement over time, indicating that on average, no singular genre resulted in significantly more head movement than any of the other genres.</p>
+            </div>
+            <div class="step">
+              <p>So, why would participants move more during silence? This could be for one of two reasons:</p>
+            </div>
+            <div class="step">
+              <p>1: The data we are using is only a subset of the data from the entire experiment. It is possible that our sample might consist of participants who tend to move more during silence. </p>
+            </div>
+            <div class="step">
+              <p>2: In the absence of auditory stimulation, people often shift, tap their feet, adjust their posture, or otherwise drift more. Silence often feels uncomfortable, whereas music gives people a rhythm to lock onto, so people might tend to make more micro-movements during periods of silence.</p>
+            </div>
+            <div class="step">
+              <p>Furthermore, while different music genres evoke different styles of movement, their overall magnitude of motion ends up about the same. This might be because individual differences within each genre overtake any small genre‐level effects.</p>
+            </div>
+            <div class="step">
+              <p>Therefore, while participants tend to move more in the absence of music, each individual tends to move to different genres of music in different ways, such as NM0004S4 and NM0004S9! We hope you enjoyed exploring these bangerz with us!</p>
+            </div>
+            <button id="next-button" onclick="location.href='../graphs/index.html'">
+              Go back to the data!
+            </button>
+            <button id="next-button" onclick="location.href='../index.html'">
+              Take me back to the intro!
+            </button>
+
+        </div>
+        
+        <div id="graphic">
+          <div id="head"></div>
+
+            <div id="axes-graphs" style="display: none">
+              <div id="xy-top">
+                  <label>Top</label>
+              </div>
+              
+              <div id="yz-side">
+                  <label>Side</label>
+              </div>
+              
+              <div id="xz-front">
+                  <label>Front</label>
+              </div>
+            </div>
+
+            <div id="intro-graph" style="display: none"></div>
+
+            <div id="disp-all" style="display: none"></div>
+        </div>
+        </div>
 </body>
 </html>

@@ -576,10 +576,10 @@ function animateHeadTrajectory(headData) {
 // scrollytelling script
 const scroller = scrollama();
 const silenceData = NM0004Data.filter(d =>
-    d.group === 'NM0004' && d.marker === 'S5' && d.genre === 'silence'
+    d.group === 'NM0004' && d.marker === 'S4' && d.genre === 'silence'
 );
 const edmData = NM0004Data.filter(d =>
-    d.group === 'NM0004' && d.marker === 'S5' && d.genre === 'edm'
+    d.group === 'NM0004' && d.marker === 'S4' && d.genre === 'edm'
 );
 scroller
   .setup({

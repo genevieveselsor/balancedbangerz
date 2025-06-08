@@ -25,6 +25,8 @@ body {
   padding: 1rem;
   box-sizing: border-box;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 #filters h3 {
@@ -261,4 +263,31 @@ body {
 .genre-line.highlight {
   stroke-width: 3;
   opacity: 1;
+}
+
+/* container pinned to the bottom of the viewport */
+#buttons {
+  margin-top: auto;       /* takes up all the free space above */
+  display: flex;
+  flex-direction: column; /* stack vertically—change to row if you want side-by-side */
+  gap: 2rem;            /* space between the two buttons */
+  width: 100%;            /* stretch across the sidebar’s width */
+}
+
+/* style both buttons */
+#buttons .next-button {
+  pointer-events: all; /* re-enable clicks on the buttons */
+  padding: 8px 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #007acc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#buttons .next-button:hover {
+  background-color: #005fa3;
 }
