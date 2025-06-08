@@ -738,7 +738,7 @@ function renderMultiLineChart(
   const uniqueGenres = Array.from(new Set(genreBlocks.map((d) => d.genre)));
   const legend = svg
     .append('g')
-    .attr('transform', `translate(${margin.left + 20},${margin.top - 10})`);
+    .attr('transform', `translate(${margin.left - 40},${margin.top - 30})`);
 
   uniqueGenres.forEach((gname, i) => {
     const row = legend.append('g').attr('transform', `translate(0,${i * 15})`);
