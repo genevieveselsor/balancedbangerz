@@ -14,6 +14,11 @@ body {
   overflow: hidden;
 }
 
+h2 {
+  font-size: 2rem;
+  margin-top: 3rem;
+}
+
 /*──────────────────────────────────────────────────────────────────────────────
   LEFT‐HAND FILTERS
 ──────────────────────────────────────────────────────────────────────────────*/
@@ -60,6 +65,32 @@ body {
   box-sizing: border-box;
   padding: 1rem;
 }
+
+#group {
+  display: flex;
+  flex-direction: column;
+}
+
+.groups {
+  display: flex; /* or use grid if you prefer */
+  gap: 1rem; /* optional spacing between blocks */
+  justify-content: space-evenly;
+}
+
+.group-list {
+  /* border: 1px solid #ccc; */
+  padding: 1rem;
+  width: 200px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+}
+
+.group-id {
+  font-weight: bold;
+}
+
 
 /*──────────────────────────────────────────────────────────────────────────────
   VIEW TOGGLE (mini‐head legend)
