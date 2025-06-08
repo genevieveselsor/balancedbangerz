@@ -248,16 +248,17 @@ function renderAxesGraph(selectedMarker, selectedGenre) {
     // renderDispGraph(filteredData);
 };
 
-const tooltip = d3.select("body").append("div")
-  .attr("class", "d3-tooltip")
-  .style("position", "absolute")
-  .style("pointer-events", "none")
-  .style("padding", "4px 8px")
-  .style("background", "rgba(255,255,255,0.9)")
-  .style("border", "1px solid #ccc")
-  .style("border-radius", "4px")
-  .style("font-size", "12px")
-  .style("display", "none");
+const tooltip = d3.select("body")
+  .append("div")
+    .attr("class","d3-tooltip")
+    .style("position","absolute")
+    .style("pointer-events","none")
+    .style("padding","4px 8px")
+    .style("background","rgba(255,255,255,0.9)")
+    .style("border","1px solid #ccc")
+    .style("border-radius","4px")
+    .style("font-size","12px")
+    .style("display","none");
 
 ///////////////////////////////////////////////////////
 
@@ -578,6 +579,73 @@ function renderMultiLineChart(
       .attr('font-size', '12px')
       .text(gname);
   });
+
+  // 1) figure out which genres are currently checked
+  const activeGenres = Array.from(new Set(genreBlocks.map(gb => gb.genre)));
+
+  // 2) create an initially‐hidden group for our hover elements
+  const hoverG = svg.append('g').style('display','none');
+
+  // vertical tracking line
+  const vLine = hoverG.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke','#aaa').attr('stroke-width',1);
+
+  // one focus‐circle per active genre
+  const focusCircles = hoverG.selectAll('circle.focus')
+    .data(activeGenres)
+    .enter().append('circle')
+      .attr('class','focus')
+      .attr('r',4)
+      .style('fill', d => genreLineColor[d])
+      .style('pointer-events','none');
+
+  // 3) transparent rect to catch mouse events
+  svg.append('rect')
+    .attr('width', innerW)
+    .attr('height', innerH)
+    .style('fill','none')
+    .style('pointer-events','all')
+    .on('mouseover', (event) => {
+      hoverG.style('display',null);
+      tooltip.style('display','block')
+        .style('left', `${event.pageX+10}px`)
+        .style('top',  `${event.pageY-25}px`);
+    })
+    .on('mouseout', () => {
+      hoverG.style('display','none');
+      tooltip.style('display','none');
+    })
+    .on('mousemove', (event) => {
+      const [mx] = d3.pointer(event);
+      const t = xScale.invert(mx);
+
+      // move the vertical line
+      vLine.attr('x1', mx).attr('x2', mx);
+
+      // build the HTML for each active genre
+      const html = activeGenres.map(genre => {
+        const series = genreBlocks.find(gb => gb.genre===genre).series;
+        const idx = Math.min(d3.bisector(d=>d.time_s).left(series, t), series.length-1);
+        const pt = series[idx];
+        return `<div><strong>${genre}:</strong> ${pt.disp.toFixed(2)} mm</div>`;
+      }).join("");
+      
+      // update tooltip content & reposition
+      tooltip.html(html)
+        .style('left', `${event.pageX+10}px`)
+        .style('top',  `${event.pageY-25}px`);
+
+      // position each focus circle
+      focusCircles.each(function(genre){
+        const series = genreBlocks.find(gb=>gb.genre===genre).series;
+        const idx = Math.min(d3.bisector(d=>d.time_s).left(series, t), series.length-1);
+        const pt = series[idx];
+        d3.select(this)
+          .attr('cx', xScale(pt.time_s))
+          .attr('cy', yScale(pt.disp));
+      });
+    });
 }
 
 // ///////////////////////////////////////////////////////

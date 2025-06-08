@@ -754,6 +754,77 @@ function renderMultiLineChart(
       .attr('font-size', '12px')
       .text(gname);
   });
+
+  // 1) list of active genres
+const activeGenres = d3.selectAll('#genre-toggle input:checked')
+.nodes().map(n => n.value);
+
+// 2) create a hover‐group (initially hidden)
+const hoverG = svg.append('g')
+.style('display','none');
+
+// vertical tracking line
+const vLine = hoverG.append('line')
+.attr('y1', 0).attr('y2', innerH)
+.attr('stroke', '#aaa').attr('stroke-width', 1);
+
+// one focus‐circle per active genre
+const focusCircles = hoverG.selectAll('circle.focus')
+.data(activeGenres)
+.enter()
+.append('circle')
+  .attr('class','focus')
+  .attr('r', 4)
+  .style('fill', d => genreLineColor[d])
+  .style('pointer-events','none');  // so it doesn’t steal mouse events
+
+// 3) transparent rect to capture mouse events
+svg.append('rect')
+.attr('width', innerW)
+.attr('height', innerH)
+.style('fill','none')
+.style('pointer-events','all')
+.on('mouseover', () => {
+  hoverG.style('display', null);
+  tooltip.style('display','block');
+})
+.on('mouseout', () => {
+  hoverG.style('display','none');
+  tooltip.style('display','none');
+})
+.on('mousemove', (event) => {
+  const [mx, my] = d3.pointer(event);
+  const t = xScale.invert(mx);
+
+  // move the vertical line
+  vLine.attr('x1', mx).attr('x2', mx);
+
+  // build up HTML for tooltip
+  const html = activeGenres.map(genre => {
+    const series = genreBlocks.find(gb => gb.genre === genre).series;
+    const bisect = d3.bisector(d => d.time_s).left;
+    const idx = Math.min(bisect(series, t), series.length - 1);
+    const pt = series[idx];
+    return `<div><strong>${genre}:</strong> ${pt.disp.toFixed(2)} mm</div>`;
+  }).join('');
+
+  // position tooltip
+  tooltip
+    .html(html)
+    .style('left',  `${event.pageX + 10}px`)
+    .style('top',   `${event.pageY - 25}px`);
+
+  // position each focus circle
+  focusCircles.each(function(genre) {
+    const series = genreBlocks.find(gb => gb.genre === genre).series;
+    const bisect = d3.bisector(d => d.time_s).left;
+    const idx = Math.min(bisect(series, t), series.length - 1);
+    const pt = series[idx];
+    d3.select(this)
+      .attr('cx', xScale(pt.time_s))
+      .attr('cy', yScale(pt.disp));
+  });
+});
 }
 
 /* (D) and (E) Draw on demand */
