@@ -562,6 +562,8 @@ function updateAxesGraph() {
       selectedGenre
     );
     updateView();
+
+    updateParticipantChartWithGenres();
   }
 
   applyFilters();
