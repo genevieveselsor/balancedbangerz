@@ -442,6 +442,36 @@ const line = d3.line()
           .style('top',   `${event.pageY-25}px`);
       })
       .on('mouseout', () => tooltip.style('display','none'));
+
+      // ─── LEGEND ─────────────────────────────────────────
+  const legendData = [
+    { name: 'Silence',   color: '#6199c6' },
+    { name: 'EDM',       color: '#de5641' }
+  ];
+
+  // position legend in top-right corner of the inner chart
+  const legend = svg.append('g')
+    .attr('class', 'legend')
+    .attr('transform', `translate(${margin.left + w - 80}, ${margin.top})`);
+
+  const item = legend.selectAll('g')
+    .data(legendData)
+    .enter().append('g')
+      .attr('transform', (d, i) => `translate(0, ${i * 20})`);
+
+  // color swatch
+  item.append('rect')
+      .attr('width', 12)
+      .attr('height', 12)
+      .attr('fill', d => d.color);
+
+  // label text
+  item.append('text')
+      .attr('x', 16)
+      .attr('y', 6)
+      .attr('dy', '0.32em')
+      .attr('font-size', '10px')
+      .text(d => d.name);
 };
 
 function computeCumulativeSeriesByGenre(data) {
