@@ -157,7 +157,8 @@ function renderHead(containerSelector) {
 
 /* RENDER AXES PLOT */
 function renderAxesPlot(containerId, data, xKey, yKey) {
-  d3.select(`#${containerId}`).selectAll('svg').remove();
+  return new Promise((resolve) => {
+    d3.select(`#${containerId}`).selectAll('svg').remove();
   const aspectWidth = 500;
   const aspectHeight = 500;
   const margin = { top: 20, right: 30, bottom: 40, left: 50 };
@@ -248,6 +249,10 @@ function renderAxesPlot(containerId, data, xKey, yKey) {
     .on('mouseout', () => {
       tooltip.style('display', 'none');
     });
+    
+    resolve();
+  });
+  
 }
 
 /* RENDER DISPLACEMENT GRAPH */
@@ -424,7 +429,7 @@ function animate(headData) {
   const baseTranslate = [300, 300];
 
   if (axesPoints.length > 0) {
-    axesPoints[0].attr('r', 0).style('opacity', 0);
+    axesPoints.forEach((points) => points.attr('r', 0).style('opacity', 0));
   }
   if (dispPoints) {
     dispPoints.attr('r', 0).style('opacity', 0);
@@ -437,8 +442,15 @@ function animate(headData) {
 
   let i = 0;
   const n = headData.length;
-  const step = 4;
-  const TICK = 1;
+  // const step = 4;
+  // const TICK = 10;
+
+  const totalDuration = 6000; // in ms
+  const TICK = 10;
+  const steps = headData.length;
+  const step = Math.ceil(steps / (totalDuration / TICK));
+
+  console.log('step:', step);
 
   headTimer = d3.interval(() => {
     if (i < n) {
@@ -465,10 +477,12 @@ function animate(headData) {
         .attr('cy', (d) => projection(d)[1]);
 
       if (axesPoints.length > 0) {
-        axesPoints[0]
-          .filter((_, idx) => idx === i)
-          .attr('r', 3)
-          .style('opacity', 0.7);
+        axesPoints.forEach((points) => {
+          points
+            .filter((_, idx) => idx === i)
+            .attr('r', 3)
+            .style('opacity', 0.7);
+        })
       }
       if (dispPoints) {
         dispPoints
@@ -523,26 +537,15 @@ function initializeViewToggle() {
 }
 
 /* UPDATE VIEW */
-function updateView() {
+async function updateView() {
   renderHead('#head');
-
   axesPoints = [];
-  if (currentView === 'front') {
-    d3.select('#xz-front').style('display', 'block');
-    d3.select('#xy-top').style('display', 'none');
-    d3.select('#yz-side').style('display', 'none');
-    renderAxesPlot('xz-front', filteredData, 'x_mm', 'z_mm');
-  } else if (currentView === 'top') {
-    d3.select('#xy-top').style('display', 'block');
-    d3.select('#xz-front').style('display', 'none');
-    d3.select('#yz-side').style('display', 'none');
-    renderAxesPlot('xy-top', filteredData, 'x_mm', 'y_mm');
-  } else {
-    d3.select('#yz-side').style('display', 'block');
-    d3.select('#xz-front').style('display', 'none');
-    d3.select('#xy-top').style('display', 'none');
-    renderAxesPlot('yz-side', filteredData, 'y_mm', 'z_mm');
-  }
+
+  await Promise.all([
+    renderAxesPlot('xz-front', filteredData, 'x_mm', 'z_mm'),
+    renderAxesPlot('xy-top', filteredData, 'x_mm', 'y_mm'),
+    renderAxesPlot('yz-side', filteredData, 'y_mm', 'z_mm'),
+  ]);
 
   renderDispGraph(filteredData);
   animate(filteredData);
