@@ -47,6 +47,11 @@ let genreToColor = {
   'edm': d3.interpolateReds,
 };
 
+const genreList = ['silence','salsa','meditation','edm'];
+const genreOrdinal = d3.scaleOrdinal()
+  .domain(genreList)
+  .range(d3.schemeCategory10);
+
 // flatten all groups into one array
 const allData = [...NM0001Data, ...NM0004Data, ...NM0011Data];
 
@@ -65,18 +70,21 @@ let axesPoints = [];
 
 // FUNCTION filter data by marker and genre
 function getObjectsByValue(data, selectedGroup, selectedMarker, selectedGenre) {
+  globalColorScale = d3
+    .scaleSequential( genreToColor[selectedGenre] )
+    .domain(globalTimeExtent);
+
+  // then do your special‐case filter:
   if (selectedGenre === "silence") {
+    // silence only first block
     return data.filter(d =>
       d.group  === selectedGroup &&
       d.marker === selectedMarker &&
       d.genre  === "silence" &&
       d.block  === "1"
     );
-  };
+  }
 
-  globalColorScale = d3.scaleSequential(genreToColor[selectedGenre])
-                           .domain(globalTimeExtent);
- 
   return data.filter(d =>
     d.group  === selectedGroup &&
     d.marker === selectedMarker &&
@@ -510,22 +518,13 @@ function computeDisplacementByGenre(data) {
       let running = 0;
  
  
-      const cumSeries = sortedPts.map((d, i, arr) => {
-        if (i === 0) {
-          return { time_s: 0, disp: 0 };
-        } else {
-          const prev = arr[i - 1];
-          const dx = d.x_mm - prev.x_mm;
-          const dy = d.y_mm - prev.y_mm;
-          const dz = d.z_mm - prev.z_mm;
-          const instDist = Math.hypot(dx, dy, dz);
-          running += instDist;
-          return { time_s: d.time_s - t0, disp: running };
-        }
-      });
+      const instSeries = sortedPts.map(d => ({
+        time_s: d.time_s - t0,
+        disp: Math.sqrt(d.x_mm**2 + d.y_mm**2 + d.z_mm**2)
+      }));
  
  
-      eachBlockCum.push(cumSeries);
+      eachBlockCum.push(instSeries);
     }
  
  
@@ -536,7 +535,7 @@ function computeDisplacementByGenre(data) {
  
     for (let i = 0; i < minLen; i++) {
       const t = eachBlockCum[0][i].time_s;
-      const medianDisp = d3.median(eachBlockCum, s => s[i].disp);
+      const medianDisp = d3.mean(eachBlockCum, s => s[i].disp);
       averagedCum.push({ time_s: t, disp: medianDisp });
     }
  
@@ -553,7 +552,8 @@ function computeDisplacementByGenre(data) {
  // (C) renderMultiLineChart: draws one solid line per genre in `containerId`.
  //     `globalTimeExtent` is shared x‐axis domain.
  // ─────────────────────────────────────────────────────────────
- function renderMultiLineChart(containerId, genreBlocks, globalTimeExtent) {
+ const selectedGenre = d3.select("#genre-filter").property("value");
+ function renderMultiLineChart(containerId, genreBlocks, globalTimeExtent, highlightGenre) {
   // 1) Remove any old <svg> inside that container:
   d3.select(`#${containerId}`).selectAll("svg").remove();
  
@@ -589,7 +589,7 @@ function computeDisplacementByGenre(data) {
   // 6) Y‐scale: 0 .. max( disp ) across all genreBlocks
   const yMax = d3.max(genreBlocks, gb => d3.max(gb.series, d => d.disp));
   const yScale = d3.scaleLinear()
-    .domain([0, yMax])
+    .domain([0, 55])
     .nice()
     .range([innerH, 0]);
  
@@ -615,14 +615,12 @@ function computeDisplacementByGenre(data) {
       .attr("y", -margin.left + 15)
       .attr("x", -innerH / 2)
       .attr("text-anchor", "middle")
-      .text("Median Displacement (mm)");
+      .text("Displacement (mm)");
  
  
   // 9) Build a color scale (one distinct color per genre)
   const uniqueGenres = Array.from(new Set(genreBlocks.map(d => d.genre)));
-  const colorScale = d3.scaleOrdinal()
-    .domain(uniqueGenres)
-    .range(d3.schemeCategory10);
+  const colorScale = genreOrdinal;
  
  
   // 10) Create a line generator: x = time_s, y = disp
@@ -636,6 +634,7 @@ function computeDisplacementByGenre(data) {
     g.append("path")
       // Make sure fill="none" comes BEFORE stroke
       .attr("class", "genre-line")   // give each line a class
+      .classed("highlight", gb.genre === highlightGenre)
       .attr("fill", "none")           // attempt to turn off fill
       .attr("stroke", colorScale(gb.genre))
       .attr("stroke-width", 1.5)
@@ -647,12 +646,12 @@ function computeDisplacementByGenre(data) {
  
   // 12) (Optional) Legend at top‐right showing color→genre
   const legend = svg.append("g")
-      .attr("transform", `translate(${width - margin.right - 120}, ${margin.top})`);
+      .attr("transform", `translate(${margin.left + 20}, ${margin.top - 10})`);
  
  
   uniqueGenres.forEach((gname, i) => {
     const row = legend.append("g")
-      .attr("transform", `translate(0, ${i * 20})`);
+      .attr("transform", `translate(0, ${i * 15})`);
     row.append("rect")
       .attr("width", 12)
       .attr("height", 12)
@@ -700,13 +699,47 @@ function computeDisplacementByGenre(data) {
  // ─────────────────────────────────────────────────────────────
  // (G) Master update function: read dropdowns and redraw group+participant
  // ─────────────────────────────────────────────────────────────
+ 
+ function updateParticipantChartWithGenres() {
+  const selectedGroup  = d3.select("#group-filter").property("value");
+  const selectedMarker = d3.select("#marker-filter").property("value");
+  // grab which genres are still checked:
+  const activeGenres = d3.selectAll("#genre-toggle input:checked").nodes()
+                          .map(n => n.value);
+
+  // filter that participant’s data *and* by those genres:
+  const partData = groups[selectedGroup]
+                     .filter(d => d.marker === selectedMarker && activeGenres.includes(d.genre));
+
+  // compute the median‐series as before:
+  const cumPt = computeCumulativeSeriesByGenre(partData);
+
+  const highlight = d3.select("#genre-filter").property("value"); 
+
+  // re-render into the “disp-participant” container:
+  renderMultiLineChart("disp-participant", cumPt, globalTimeExtent, highlight);
+}
+
+// 2) initialize the toggle UI:
+function initParticipantGenreToggle() {
+  // whenever a checkbox changes:
+  d3.selectAll("#genre-toggle input")
+    .on("change", updateParticipantChartWithGenres);
+
+  // draw once on page‐load:
+  updateParticipantChartWithGenres();
+}
+
+// 3) call this once your page (and filters) are set up:
+initParticipantGenreToggle();
+ 
  function updateAllCharts() {
   const selGroup  = d3.select("#group-filter").property("value");
   const selMarker = d3.select("#marker-filter").property("value");
  
  
   drawSelectedGroupChart(selGroup);
-  drawSelectedParticipantChart(selGroup, selMarker);
+  updateParticipantChartWithGenres();
  }
  
  

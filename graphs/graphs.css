@@ -217,3 +217,67 @@ align-items: flex-start;
   padding: 2em;
   overflow-x: hidden;
 }
+
+/* 1) lay them out nicely */
+#genre-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 2) style the label so the click‐target is the whole thing */
+#genre-toggle label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 1rem;
+}
+
+/* 3) hide the native checkbox and size our custom one */
+#genre-toggle input[type="checkbox"] {
+  /* modern browsers will color the checkbox itself */
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  margin-right: 6px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+/* 4) when checked, fill it in */
+#genre-toggle input[type="checkbox"]:checked {
+  background-color: currentColor;
+  border-color: currentColor;
+}
+
+/* 5) draw a checkmark */
+#genre-toggle input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 0;
+  left: 2px;
+  font-size: 14px;
+  line-height: 18px;
+  color: white;
+}
+
+/* 6) give each genre its own colour */
+#genre-toggle input[value="silence"]   { color: #6baed6; }  /* light blue */
+#genre-toggle input[value="salsa"]     { color: #fc8d59; }  /* orange */
+#genre-toggle input[value="meditation"]{ color: #74c476; }  /* green */
+#genre-toggle input[value="edm"]       { color: #e34a33; }  /* red */
+
+.genre-line {
+  stroke-width: 1.5;
+  opacity: 0.4;
+}
+.genre-line.highlight {
+  stroke-width: 3;
+  opacity: 1;
+}

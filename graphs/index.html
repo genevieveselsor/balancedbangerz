@@ -90,7 +90,7 @@
       </div>
 
       <div id="graphs">
-        <h3>Graphs</h3>
+        <h3>Movement Visualizations of Selected Filters</h3>
         <div id="axes-graphs">
           <div id="xy-top">
             <label>Top</label>
@@ -115,21 +115,30 @@
           </div>
         </div>
 
-        <h3>New section</h3>
+        <h3>Displacement of All Genres for Selected Individual</h3>
 
-        <div id="compare-graphs">
-          <div id="disp-all">
+        <!-- <div id="compare-graphs"> -->
+          <!-- <div id="disp-all">
             <label for="disp-all">All‐Subjects Median Displacement</label>
-          </div>
+          </div> -->
         
           <!-- Selected Group Average Displacement -->
-          <div id="disp-group">
+          <!-- <div id="disp-group">
             <label for="disp-group">Selected Group Median Displacement</label>
-          </div>
+          </div> -->
         
           <!-- Selected Participant/Marker Average Displacement -->
-          <div id="disp-participant">
-            <label for="disp-participant">Selected Participant Median Displacement</label>
+          <div id="genre-displacement">
+            <div id="genre-toggle">
+              <label><input type="checkbox" value="silence" checked> Silence</label>
+              <label><input type="checkbox" value="salsa"   checked> Salsa</label>
+              <label><input type="checkbox" value="meditation" checked> Meditation</label>
+              <label><input type="checkbox" value="edm"      checked> EDM</label>
+            </div>
+            
+            <div id="disp-participant">
+              <label for="disp-participant">Displacement by Genre</label>
+            </div>
           </div>
         </div>
       </div>
