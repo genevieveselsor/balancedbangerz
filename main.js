@@ -297,8 +297,8 @@ function renderHead(containerSelector) {
 function renderAxesPlot(containerId, data, xKey, yKey) {
   return new Promise((resolve) => {
     d3.select(`#${containerId}`).selectAll('svg').remove();
-    const aspectWidth = 500;
-    const aspectHeight = 500;
+    const aspectWidth = 300;
+    const aspectHeight = 300;
     const margin = { top: 20, right: 30, bottom: 40, left: 50 };
     const innerWidth = aspectWidth - margin.left - margin.right;
     const innerHeight = aspectHeight - margin.top - margin.bottom;
@@ -374,9 +374,13 @@ function renderAxesPlot(containerId, data, xKey, yKey) {
           .style('left', `${event.pageX + 10}px`)
           .style('top', `${event.pageY - 25}px`)
           .style('display', 'block').html(`
+          <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
           <strong>${xKey}:</strong> ${d[xKey].toFixed(3)}<br/>
           <strong>${yKey}:</strong> ${d[yKey].toFixed(3)}<br/>
-          <strong>time (s):</strong> ${d.time_s.toFixed(2)}
+          <strong>distance from (0, 0):</strong>
+            ${Math.sqrt(d[`${xKey}`] ** 2 + d[`${yKey}`] ** 2).toFixed(
+              3
+            )} mm<br/>
         `);
       })
       .on('mousemove', (event) => {
@@ -462,7 +466,7 @@ function renderMiniHead(containerSelector, view) {
 
 /* ANIMATION */
 function animate(headData) {
-  const f = 1.5;
+  const f = 0.5;
   const baseTranslate = [200, 200];
 
   if (axesPoints.length > 0) {
