@@ -73,6 +73,7 @@ body {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+  flex-direction: column;
 }
 
 .legend-item {
@@ -112,10 +113,11 @@ body {
 #axes-graphs div{
   display: flex;
   flex-direction: column;
-  grid-template-rows: 10% 90%;
+  /* grid-template-rows: 10% 90%; */
   align-items: center;
   justify-content: center;
   width: 85%;
+  margin: 0 auto;
 }
 
 #axes-graphs label {
@@ -145,6 +147,8 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   flex: 0 0 auto;
+  margin: 0 auto;
+  /* width: 85%; */
 }
 
 #head svg {
@@ -176,7 +180,7 @@ body {
 
 #chart-head-wrapper {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* 2/3 and 1/3 split */
+  grid-template-columns: 2fr 1fr 7%; /* 2/3 and 1/3 split */
   gap: 1rem; /* optional space between chart and head */
   align-items: center;
   justify-content: space-evenly;
