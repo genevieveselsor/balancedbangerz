@@ -466,7 +466,7 @@ function renderMiniHead(containerSelector, view) {
 
 /* ANIMATION */
 function animate(headData) {
-  const f = 0.5;
+  const f = 1.5;
   const baseTranslate = [200, 200];
 
   if (axesPoints.length > 0) {

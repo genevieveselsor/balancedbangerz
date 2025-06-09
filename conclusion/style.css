@@ -3,11 +3,11 @@
 } */
 
 body {
-    font: 100%/1.5 system-ui;
-    margin: 1em;
-  }
-  
-  /* #axes-graphs {
+  font: 100%/1.5 system-ui;
+  margin: 1em;
+}
+
+/* #axes-graphs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
@@ -35,191 +35,214 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   } */
-  
-  .top-left-button {
-    position: fixed;
-    top: 1em;
-    right: 1em;
-  }
-  
-  .top-left-button button {
-    padding: 0.5em 1em;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border: 1px solid #333;
-    background: #f0f0f0;
-    border-radius: 4px;
-  }
-  
-  .top-left-button button:hover {
-    background: #e0e0e0;
-  }
-  
-  #disp-graph-container label {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 0.5rem;
-  }
-  
-  #disp-chart {
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-  
-  #scrolly {
-    display: flex;
-    align-items: flex-start;
-    transition: opacity 0.5s ease; 
-  }
-  
-  #story {
-    flex: 0 0 40%;
-    transition: opacity 0.5s ease;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-  
-  #story .step {
-    min-height: 75vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.45em;
-  }
-  
-  #graphic {
-    flex: 0 0 60%;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  #intro-graph {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-  
-  #intro-graph svg {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-  
-  #axes-graphs {
-    gap: 0.25em;
-  }
-  
-  #axes-graphs svg {
-    width: 100% !important;
-    height: 200px !important;
-    display: block;
-  }
-  
-  #axes-graphs label {
-    font-size: 12px;
-  }
-  
-  #xy-top,
-  #yz-side,
-  #xz-front {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  #title {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: white;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-    pointer-events: auto;
-    transition: opacity 0.67s ease-in-out;
-  }
-  
-  #title h1 {
-    font-size: 4rem;
-    margin: 0;
-  }
-  
-  #start-arrow {
-    position: absolute;
-    bottom: 1.5em;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 0.75rem solid transparent;
-    border-right: 0.75rem solid transparent;
-    border-top: 1rem solid black;
-    cursor: pointer;
-    animation: bounce 1.5s infinite;
-  }
-  
-  @keyframes bounce {
-    0%, 30%, 50%, 80%, 100% {
-      transform: translateX(-50%) translateY(0);
-    }
-    40% {
-      transform: translateX(-50%) translateY(0.5em);
-    }
-    60% {
-      transform: translateX(-50%) translateY(0.25em);
-    }
-  }
-  
-  #title.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-  
-  
-  /*── When visible, center it and enlarge it ─────────────────────────────────────────*/
-  #next-button {
-    display: block;          /* override “display:none” */
-    margin: 40px auto;       /* horizontally center, with some vertical spacing */
-    padding: 12px 28px;      /* larger click‐area */
-    font-size: 1.25rem;      /* bigger text */
-    font-weight: bold;
-    background-color: #007acc; /* or whatever button color you like */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  /* Optional hover state */
-  #next-button:hover {
-    background-color: #005fa3;
-  }
 
-  #disp-all {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-  
-  #disp-all svg {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
+.top-left-button {
+  position: fixed;
+  top: 1em;
+  right: 1em;
+}
 
-  .genre-line {
-    stroke-width: 1.5;
-    opacity: 0.4;
+.top-left-button button {
+  padding: 0.5em 1em;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #333;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.top-left-button button:hover {
+  background: #e0e0e0;
+}
+
+#disp-graph-container label {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+#disp-chart {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#scrolly {
+  display: flex;
+  align-items: flex-start;
+  transition: opacity 0.5s ease;
+}
+
+#story {
+  flex: 0 0 40%;
+  transition: opacity 0.5s ease;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#story .step {
+  min-height: 75vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.45em;
+}
+
+#graphic {
+  flex: 0 0 60%;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#intro-graph {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#intro-graph svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#axes-graphs {
+  gap: 0.25em;
+}
+
+#axes-graphs svg {
+  width: 100% !important;
+  height: 200px !important;
+  display: block;
+}
+
+#axes-graphs label {
+  font-size: 12px;
+}
+
+#xy-top,
+#yz-side,
+#xz-front {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#title {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  pointer-events: auto;
+  transition: opacity 0.67s ease-in-out;
+}
+
+#title h1 {
+  font-size: 4rem;
+  margin: 0;
+}
+
+#start-arrow {
+  position: absolute;
+  bottom: 1.5em;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 0.75rem solid transparent;
+  border-right: 0.75rem solid transparent;
+  border-top: 1rem solid black;
+  cursor: pointer;
+  animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  30%,
+  50%,
+  80%,
+  100% {
+    transform: translateX(-50%) translateY(0);
   }
-  .genre-line.highlight {
-    stroke-width: 2.5;
-    opacity: 1;
+  40% {
+    transform: translateX(-50%) translateY(0.5em);
   }
+  60% {
+    transform: translateX(-50%) translateY(0.25em);
+  }
+}
+
+#title.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/*── When visible, center it and enlarge it ─────────────────────────────────────────*/
+#next-button {
+  display: block; /* override “display:none” */
+  margin: 40px auto; /* horizontally center, with some vertical spacing */
+  padding: 12px 28px; /* larger click‐area */
+  font-size: 1.25rem; /* bigger text */
+  font-weight: bold;
+  background-color: #007acc; /* or whatever button color you like */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+/* Optional hover state */
+#next-button:hover {
+  background-color: #005fa3;
+}
+
+#disp-all {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#disp-all svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.genre-line {
+  stroke-width: 1.5;
+  opacity: 0.4;
+}
+.genre-line.highlight {
+  stroke-width: 2.5;
+  opacity: 1;
+}
+
+.top-left-button {
+  position: fixed;
+  top: 1em;
+  right: 1em;
+  z-index: 998;
+}
+
+.top-left-button button {
+  padding: 0.5em 1em;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #333;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.top-left-button button:hover {
+  background: #e0e0e0;
+}

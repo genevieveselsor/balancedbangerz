@@ -40,6 +40,7 @@ body {
   position: fixed;
   top: 1em;
   right: 1em;
+  z-index: 998;
 }
 
 .top-left-button button {
