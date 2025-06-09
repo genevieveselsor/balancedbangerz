@@ -374,14 +374,10 @@ function renderAxesPlot(containerId, data, xKey, yKey) {
           .style('left', `${event.pageX + 10}px`)
           .style('top', `${event.pageY - 25}px`)
           .style('display', 'block').html(`
-          <strong>time:</strong> ${d.time_s.toFixed(2)} s<br/>
-          <strong>${xKey}:</strong> ${d[xKey].toFixed(3)}<br/>
-          <strong>${yKey}:</strong> ${d[yKey].toFixed(3)}<br/>
-          <strong>distance from (0, 0):</strong>
-            ${Math.sqrt(d[`${xKey}`] ** 2 + d[`${yKey}`] ** 2).toFixed(
-              3
-            )} mm<br/>
-        `);
+            <strong>${xKey}:</strong> ${d[xKey].toFixed(3)}<br/>
+            <strong>${yKey}:</strong> ${d[yKey].toFixed(3)}<br/>
+            <strong>time (s):</strong> ${d.time_s.toFixed(2)}
+          `);
       })
       .on('mousemove', (event) => {
         tooltip
